@@ -17,6 +17,28 @@ http://docs.aws.amazon.com/cli/latest/userguide/installing.html#install-with-pip
 Configure credentials:
 http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
 
+## AWS Cognito support
+
+If you don't know AWS Cognito, see: https://aws.amazon.com/cognito/
+
+It allows you to give a unique identity to your users no matter on which device they're on. Pretty handy for providing credentials to your AWS resources like API Gateway for example.
+
+When using Cognito + API Gateway + Lambda, you can achieve a Serverless backend for your API. The Cognito IdentityId is passed along all the way down to your lambda function. You can then identify your user in Lambda for your logic.
+
+## Lambda Context Support
+
+This framework supports a MockContext that simulate the `context` variable you would receive in the real Lambda environment.
+
+     # src/<function>/index.py
+     def handler(event, context):
+        ...
+
+In `context` you will find your AWS Cognito Identity Pool ID and IdentityId that the script will get for you.
+
+Check the `tests/MockContext.py` file and change the `self.identity.cognito_identity_pool_id` to point to your Identity Pool.
+
+If you don't want Cognito, then just comment this out and put whatever in `self.identity.cognito_identity_id`.
+
 ## Writing Functions
 
 Function code goes in the `src/` directory. Each function must be in a
@@ -33,9 +55,9 @@ The entrypoint for each function should be in an `index.py` file,
 inside of which should be a function named `handler`. See the AWS
 Lambda documentation for more details on how to write the handler.
 
-    # src/<function>/index.py
-	def handler(event, context):
-		...
+       # src/<function>/index.py
+       def handler(event, context):
+       	   ...
 
 ### Third-party Libraries
 

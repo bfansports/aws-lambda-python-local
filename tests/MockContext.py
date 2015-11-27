@@ -21,12 +21,12 @@ class MockContext(object):
 
         # Get an identity ID
         self.identity = lambda: None
-        self.identity.cognito_identity_pool_id = 'us-east-1:49d897f9-e8a3-459b-abf2-8d44b0fd0b1b'
+        self.identity.cognito_identity_pool_id = 'us-east-1:xxxxxxxx-e8a3-xxxx-abf2-xxxxxxxxxxxxxx'
 
         res = boto3.client('cognito-identity').get_open_id_token_for_developer_identity(
             IdentityPoolId=self.identity.cognito_identity_pool_id,
             Logins={
-                'login.sportarchive.test': 'test-user'
+                'login.lambdamock.test': 'test-user'
             },
         )
 
