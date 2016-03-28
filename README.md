@@ -1,9 +1,25 @@
-# AWS Lambda Python Local environment
+# Dev,Create,Deploy and Test API Gateway + Python Lambda Functions
 
-This tool provides a framework for writing, packaging, testing and
-deploying Python AWS Lambda functions.
+This repository provides a framework for writing, packaging, and
+deploying lambda functions to AWS.
 
-It's all done with a Makefile.
+You can also auto create or update your API on AWS API Gateway. You can also test connectivity to it and even call AWS Cognito to obtain an IdentityID. You can simluate a Mobile App behavior and play the entire flow locally:
+
+Cognito -> Connect to API -> Call Lambda function -> Parse result file
+
+## Cognito
+
+If you API is not public and secured by IAM Roles, you will need the proper credentials to connect to it. Cognito allow your client to obtain an identity and a token so your client can obtain temporary Credentials. Those credentials are set by AWS IAM roles. And grants access to AWS services. In this case, API Gateway and Lambda (if your lambda function is configured to pass through user credentials)
+
+## API Gateway & Swagger
+
+You should define your API in a description file. Swagger provides a YAML format for describing your API. It also generates documentaiton for you and an online service: http://swaggerhub.com
+
+There is an example of a yaml file in the "swagger" folder.
+
+Using the aws-apigateway-importer program provided by AWS and added as a submodule here, you can automatically create, update and deploy your API in AWS. No need for console anymore.
+
+The YAML file is authoriative and always accuratly describe your API. 
 
 ## Setup your env
 
@@ -17,28 +33,6 @@ http://docs.aws.amazon.com/cli/latest/userguide/installing.html#install-with-pip
 Configure credentials:
 http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-started.html
 
-## AWS Cognito support
-
-If you don't know AWS Cognito, see: https://aws.amazon.com/cognito/
-
-It allows you to give a unique identity to your users no matter on which device they're on. Pretty handy for providing credentials to your AWS resources like API Gateway for example.
-
-When using Cognito + API Gateway + Lambda, you can achieve a Serverless backend for your API. The Cognito IdentityId is passed along all the way down to your lambda function. You can then identify your user in Lambda for your logic.
-
-## Lambda Context Support
-
-This framework supports a MockContext that simulate the `context` variable you would receive in the real Lambda environment.
-
-     # src/<function>/index.py
-     def handler(event, context):
-        ...
-
-In `context` you will find your AWS Cognito Identity Pool ID and IdentityId that the script will get for you.
-
-Check the `tests/MockContext.py` file and change the `self.identity.cognito_identity_pool_id` to point to your Identity Pool.
-
-If you don't want Cognito, then just comment this out and put whatever in `self.identity.cognito_identity_id`.
-
 ## Writing Functions
 
 Function code goes in the `src/` directory. Each function must be in a
@@ -47,7 +41,7 @@ function name is "signin", the code goes in the `src/signin`
 directory.
 
 *Note:* Make sure you put an `__init__.py` in your folder and any
- subfolders.
+ subfolders. Check existing functions.
 
 ### Entry Point
 
@@ -55,9 +49,9 @@ The entrypoint for each function should be in an `index.py` file,
 inside of which should be a function named `handler`. See the AWS
 Lambda documentation for more details on how to write the handler.
 
-       # src/<function>/index.py
-       def handler(event, context):
-       	   ...
+    # src/<function>/index.py
+	def handler(event, context):
+		...
 
 ### Third-party Libraries
 
@@ -77,11 +71,80 @@ means any module or sub-modules in that directory will be available in
 any function. (Behind the scenes, the contents of the `lib` directory
 are copied verbatim alongside the Lambda function source files.)
 
-## Testing
+## Environment & Secrets
+
+In order for your Lambda functions to get secrets nad environment variables, we provide a mechanism in the Makefile that downloads a file from S3 and is transform as a env.py file. This file can then be `import` in your function and will be added in the resulting ZIP file of the Lambda function.
+
+### Details
+
+If you want to use environment variables, just put the line below at the
+top of your index.py file.
+
+	from lib import env
+
+To refresh the local .env file, delete it, and
+
+   	make .env [ENV=prod]
+
+Note: Edit the `.env` rule in the Makefile to download your configuration file from the location you want.
+
+We could download from S3 at runtime, but it slows down the Lambda function, and you pay for that.
+
+Secrets such as the following can be added to this file in S3:
+  - Environment variables
+  - Secret API keys
+  - Anything else that is external and dynamic
+
+Use the ENV variables to pull the proper file in the correct location so you can handle multiple environments.
+
+## Makefile
+
+All is done through the Makefile.
+
+```
+Run a function:        make run/FUNCTION [EVENT=filename]
+Run all tests:         make test
+Run a specific test:   make test/TEST
+----------------------------------------------------------
+Create AWS function:   make create/FUNCTION
+Package all functions: make dist
+Package a function:    make dist/FUNCTION
+Deploy all functions:  make deploy [ENV=prod] - Default ENV=dev.
+Deploy a function:     make deploy/FUNCTION [ENV=prod]
+Setup environment:     make env [ENV=environment] - Downloads the config file from S3. (edit Makefile)
+Set function MEM size: make setmem/FUNCTION SIZE=[size] - Set/Update a function memory size
+----------------------------------------------------------
+Deploy an API to AWS:  make api VERS=<version> [UPDATE=<api_id>] [STAGE=<stage_name>] [CREATE=1]
+       	      	       The Makefile expects a file in the `swagger` folder as follow: swagger/api-${VERS}.yaml
+                       We process this file and perfom replacement of possible %% variables in the file.
+		       Edit Makefile to process your custom variables.
+                       You can decide to deploy the API straight to AWS API Gateway and deploy it.
+                       If UPDATE is provided: It will update the API directly in AWS using the ID provided
+                       If STAGE is provided: It will also deploy the API once updated
+                       If CREATE is provided: It will create the API
+----------------------------------------------------------
+Connect to a live API: make connect METHOD=<method> ENDPOINT=</path/{id}> [QUERY=<foo=bar&bar=foo>] [PAYLOAD=<filepath>] [NOAUTH=1]
+                       METHOD: GET, POST, PUT, PATCH, DELETE, etc
+                       ENDPOINT: refers to the URL path after `hostname/stage/`. Example: `/users`, `/videos`, etc 
+                       QUERY: refers to the querystring passed to the URL. Standard querystring. Example: `id=2134&format=json`
+		       
+                       You can provide payload with STDIN. Just type your input JSON data, then hit 'ctrl-d' to exit input and send the input data.
+
+		       NOAUTH forces a new Cognito Identity and ignore the .identity file.
+
+		       The .identity file caches your Cognito identity locally. We create it at the first call and cache it. When you test your lambda functions locally, we pass the identity to the functions in the `context` variable. We Mock what you would receive from AWS.
+
+                       Examples:
+                       POST /signin: Sign the user in
+                       `$> make connect ENDPOINT=/signin METHOD=POST PAYLOAD=tests/data/signin.json`
+
+                       GET /assets/{asset_id}: Get an asset
+                       `$> make connect ENDPOINT=/assets/0e0d1e42ad20443c METHOD=GET`
+```
 
 ### Running Functions Locally
 
-Before building and deploying, you sure want to test your code
+Before building and deploying, you may want to test your Lambda code
 first. In order to simulate the Lambda environment, a script is
 provided that will execute your function as if it was in AWS Lambda.
 
@@ -91,10 +154,10 @@ provided that will execute your function as if it was in AWS Lambda.
 
 	optional arguments:
 	  VERBOSE=1       Sets verbose output for the function
-	  EVENT=filename  Load an event from a file rather than stdin. JSON file with the content to provide.
+	  EVENT=filename  Load an event from a file rather than stdin. This file contain the input you want to send to your function.
 
-If you don't specify EVENT, `make run/%` will take a JSON event from a standard input (stdin).
-Stdin is good to use for functions that don't take any input. Just send an empty object by typing `{}` and then exit from stdin by typing `ctrl-d`.
+The `make run/%` script will take a JSON event from a standard input
+(or a file if you specify), and execute the function you specify.
 
 ### Writing Unit Tests
 
@@ -114,7 +177,16 @@ run `make test/<TEST>`, replacing `<TEST>` with the name of the test
 (i.e., the part of the test's filename after "test"; as an example,
 the file "testUpload.py" has the name "upload").
 
-## Building
+### Creating
+
+If the function is new you must create it in the system.
+
+        make create/<function>
+
+This will create the function in lambda. You can then update it using
+"deploy" below.
+
+### Building
 
 Once your function is written, it can be built into a ZIP file.
 
@@ -130,23 +202,27 @@ Note: If you didn't get the Python modules. Just run first:
 You can also run `make all` or `make dist` to build all of the
 functions.
 
-## Creating
+### Deploying
 
-If the function is new you must create it in AWS.
+Finally, you can deploy a function by running:
 
-        make create/<function>
-
-This will create the function in lambda. It will `build` it first and then zip it and send it over to AWS Lambda.
-You can then update it using `make deploy/<function>" below.
-
-## Deploying
-
-You made a quick update, now you must deploy the Lambda function. *First the Lambda function
-needs to be created in AWS*
-
-        make deploy/<function>
+	make deploy/<function> [ENV=prod]
 
 This will build the ZIP file, upload it to S3, and finally update the
 function code on Lambda.
 
-You also simply run `make deploy` to deploy ALL your functions in `src`.
+As with building, you can call `make deploy` to simultaneously deploy
+all Lambda functions. (Use this carefully.)
+
+You want to specify ENV=prod if you want to pull the .env file from prod S3 and not the default DEV.
+If you do so, make sure you have the AWS credentials setup correctly locally.
+
+### Connecting
+
+If your API is secure, you can't test it in the AWS console nor in the browser anymore. You need to authenticate.
+
+If you use Cognito, you can connect to your API by using this framework:
+
+ 	make connect ENDPOINT=/my_endpoint METHOD=GET QUERY="parm1=val1"
+
+This will call your API and display the resulting data. We expect JSON.

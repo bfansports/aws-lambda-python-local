@@ -2,12 +2,14 @@
 
 import argparse
 import importlib
-import json
 import logging
 import sys
+import json
 import traceback
-import tests.MockContext
+from tests import MockContext
+from lib import common
 import lib
+
 
 # Parse CLI arguments
 parser = argparse.ArgumentParser(description='Run a Lambda function locally.')
@@ -21,7 +23,7 @@ args = parser.parse_args()
 
 # Set up context
 response = ''
-context = tests.MockContext.MockContext(args.name, '$LATEST')
+context = MockContext.MockContext(args.name, '$LATEST')
 logging.basicConfig(
     stream=sys.stderr,
     format=("[%(levelname)s]\t%(asctime)s\t{req}\t%(message)s").format(req=context.aws_request_id),
@@ -32,7 +34,9 @@ logging.basicConfig(
 try:
     # Run the function
     module = importlib.import_module('src.{name}.index'.format(name=args.name))
-    response = module.handler(json.load(args.input), context)
+    event = common.get_payload(args.input, context.identity.cognito_identity_id, '{}')
+    event = json.loads(event);
+    response = module.handler(event, context)
 except Exception as exc:
     exc_type, exc_value, exc_traceback = sys.exc_info()
     response = {
@@ -42,4 +46,5 @@ except Exception as exc:
     }
     del exc_traceback
 
+print "\nOutput:\n--------"
 print json.dumps(response, indent=4, separators=(',', ': '))

@@ -1,0 +1,3282 @@
+swagger: '2.0'
+info:
+  version: '0.6'
+  title: SA Client API
+  description: API for SA Fan App and user facing website.
+  termsOfService: 'http://swagger.io/terms/'
+  contact:
+    name: Sport Archive Support
+    email: support@sportarchive.tv
+host: sportarchive.tv
+schemes:
+  - https
+consumes:
+  - application/json
+produces:
+  - application/json
+paths:
+  /signin:
+    post:
+      description: "<b>[LAMBDA]</b> \n\n<b>STATUS</b>: DONE - <b style=\"color: green\">TESTED</b>\n\n\nSign the user in. Sending social info to backend.\n\nThis will return the Users object if sign in is successful.\nIf the User doesn't exists we create it."
+      parameters:
+        - name: user
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/User'
+      responses:
+        '200':
+          description: The User object
+          schema:
+            $ref: '#/definitions/User'
+        '500':
+          description: Execution error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:signin/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: null
+        requestParameters: null
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                #set($elem = $input.path('$'))
+                {
+                  "IdentityId": "$elem.IdentityId",
+                  "identifier": "$elem.identifier",
+                  "provider": "$elem.provider",
+                  "firstname": "$elem.firstname",
+                  "lastname": "$elem.lastname",
+                  "photoURL": "$elem.photoURL",
+                  "email": "$elem.email",
+                  "displayName": "$elem.displayName",
+                  "username": "$elem.username",
+                  "city": "$elem.city",
+                  "message": "$elem.message",
+                  "gender": "$elem.gender",
+                  "birthdate": "$elem.birthdate"
+                  #if($elem.avatar.toString() != ''),"avatar": $input.json('$.avatar')#end
+                  #if($elem.levels.global.toString() != ''),"level": $input.json('$.levels.global')#end
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /signup:
+    post:
+      description: "<b>[LAMBDA]</b> \n\n<b>STATUS</b>: DONE - <b style=\"color: green\">TESTED</b>\n* Investigating with AWS. The function is dead on AWS API Gateway\n\nSigning up a new user. Send his Social information, we will save the user in the DB\n"
+      parameters:
+        - name: user
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/User'
+      responses:
+        '200':
+          description: Success. Get User back
+          schema:
+            $ref: '#/definitions/User'
+        '409':
+          description: Conflict. User already exists.
+          schema:
+            $ref: '#/definitions/Error'
+        '500':
+          description: Execution error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:signup/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: null
+        requestParameters: null
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json:  |
+                #set($elem = $input.path('$'))
+                {
+                  "IdentityId": "$elem.IdentityId",
+                  "identifier": "$elem.identifier",
+                  "provider": "$elem.provider",
+                  "firstname": "$elem.firstname",
+                  "lastname": "$elem.lastname",
+                  "photoURL": "$elem.photoURL",
+                  "email": "$elem.email",
+                  "displayName": "$elem.displayName",
+                  "username": "$elem.username",
+                  "city": "$elem.city",
+                  "message": "$elem.message",
+                  "gender": "$elem.gender",
+                  "birthdate": "$elem.birthdate"
+                  #if($elem.avatar.toString() != ''),"avatar": $input.json('$.avatar')#end
+                  #if($elem.levels.global.toString() != ''),"level": $input.json('$.levels.global')#end
+                }
+          'user_already_exists':
+            statusCode: '409'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /validate_username:
+    post:
+      description: "<b>[LAMBDA]</b> \n\n\n<b>STATUS</b>: DONE - TESTED\n\nValidate if the provided username is already used or not\n"
+      parameters:
+        - name: username
+          in: body
+          description: Username to validate
+          required: true
+          schema:
+            $ref: '#/definitions/Username'
+      responses:
+        '200':
+          description: Success. Get USer back
+          schema:
+            $ref: '#/definitions/Success'
+        '403':
+          description: Bad username
+          schema:
+            $ref: '#/definitions/Error'
+        '500':
+          description: Execution error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:validate_username/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: null
+        requestParameters: null
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          'username_exists|bad_length|duplicated_username':
+            statusCode: '403'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+  '/assets/{asset_id}':
+    get:
+      description: "<b>[PROXY]</b> \n\n\n<b>STATUS</b>: DONE - Tested\n\nGet one Asset from Orchestrate using its ID.\n"
+      parameters:
+        - name: asset_id
+          in: path
+          description: ID of the item to get
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Returns one asset
+          schema:
+            $ref: '#/definitions/Asset'
+        '404':
+          description: Asset not found
+          schema:
+            $ref: '#/definitions/Error'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: http
+        uri: 'https://api.orchestrate.io/v0/assets/{asset_id}'
+        httpMethod: GET
+        requestParameters:
+          integration.request.path.asset_id: method.request.path.asset_id
+          integration.request.header.Authorization: "%ORCH_CREDS%"
+        cacheNamespace: cache-namespace
+        responses:
+          '404':
+            statusCode: '404'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                   "errorMessage" : "$input.json('$.message')"
+                }
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+          '5d{2}':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                   "errorMessage" : "$input.json('$.message')"
+                }
+  /assets:
+    get:
+      description: "<b>[LAMBDA]</b>\n\n<b>STATUS</b>: DONE - Tested - <b style=\\\"color: red\\\">Partial DATA</b>\n\nAssets returned are only of type image for now. We're waiting for \\\"video\\\" assets to be flagged as such.\nReturn a list of assets (images and/or videos) sorted by popularity. \n\nThis endpoint allows you to retrieve images and video objects. Use for the event picture wall and the list of video assets.\n"
+      parameters:
+        - name: query
+          in: query
+          description: Query to match in the title and description to filter the list of assets
+          required: false
+          type: string
+        - name: org_id
+          in: query
+          description: ID of the organization to filter with
+          required: false
+          type: string
+        - name: type
+          in: query
+          description: 'Type of assets: video | image to filter with'
+          required: false
+          type: string
+          enum:
+            - video
+            - image
+        - name: event_id
+          in: query
+          description: ID of the event to filter with
+          required: false
+          type: string
+        - name: limit
+          in: query
+          description: Limit the number of items returned. 100 Max. 1 Min
+          required: false
+          type: integer
+          maximum: 100
+          minimum: 1
+        - name: offset
+          in: query
+          description: Where to start searching in the result array
+          required: false
+          type: integer
+          minimum: 0
+      responses:
+        '200':
+          description: List of organizations videos sorted by popularity
+          schema:
+            $ref: '#/definitions/AssetList'
+        '500':
+          description: Execution error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:assets/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "query" : "$input.params('query')",
+              "org_id" : "$input.params('org_id')",
+              "event_id" : "$input.params('event_id')",
+              "type" : "$input.params('type')",
+              "limit" : "$input.params('limit')",
+              "offset" : "$input.params('offset')"
+            }
+        requestParameters:
+          integration.request.querystring.query: method.request.querystring.query
+          integration.request.querystring.org_id: method.request.querystring.org_id
+          integration.request.querystring.event_id: method.request.querystring.event_id
+          integration.request.querystring.type: method.request.querystring.type
+          integration.request.querystring.limit: method.request.querystring.limit
+          integration.request.querystring.offset: method.request.querystring.offset
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "results": [
+                    #foreach($elem in $input.path('$.results'))
+                    {
+                      "path": {
+                        "kind": "$elem.path.kind",
+                        "reftime": $elem.path.reftime,
+                        "ref": "$elem.path.ref",
+                        "key": "$elem.path.key",
+                        "collection": "$elem.path.collection"
+                      },
+                      "value": {
+                        "id": "$elem.path.key",
+                        "filename": "$util.urlEncode($elem.value.filename)",
+                        "title": "$util.urlEncode($elem.value.title)",
+                        "description": "$util.urlEncode($elem.value.description)",
+                        "thumb_hd_url": "$elem.value.thumb_hd_url",
+                        "thumb_sd_url": "$elem.value.thumb_sd_url",
+                        "asset_url": "$elem.value.asset_url",
+                        "date": "$elem.value.date",
+                        "datetime": $elem.value.datetime,
+                        "channel_id": "$elem.value.channel_id",
+                        "org_id": "$elem.value.org_id",
+                        "bucket": "$elem.value.bucket",
+                        "published": "$elem.value.published",
+                        "insert_time": $elem.value.insert_time,
+                        "update_time": $elem.value.update_time,
+                        "vote_up": $elem.value.vote_up,
+                        "inserted_by": "$elem.value.inserted_by",
+                        "inserted_by_username": "$elem.value.inserted_by_username",
+                        "type": "$elem.value.type",
+                        "key": "$elem.value.key",
+                        "views": $elem.value.views,
+                        "fan_asset": $elem.value.fan_asset,
+                        "event_asset": $elem.value.event_asset,
+                        "dam_status": "$elem.value.dam_status"
+                      }
+                    }
+                    #if($foreach.hasNext),#end
+                    #end
+                  ],
+                  #if($input.path('$.total_count') != '')"total_count": $input.path('$.total_count'),#end
+                  "count": $input.path('$.count')
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /rewards:
+    get:
+      description: >-
+        <b>[LAMBDA] - DONE (nico)</b>
+
+        Get rewards for an organization
+      parameters:
+        - name: org_id
+          in: query
+          description: |
+            The org_id of the org to pull rewards from
+          required: true
+          type: string
+      responses:
+        '200':
+          description: List of rewards
+          schema:
+            $ref: '#/definitions/RewardList'
+        '500':
+          description: Execution error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:rewards_get/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "org_id" : "$input.params('org_id')"
+            }
+        requestParameters:
+          integration.request.querystring.org_id: method.request.querystring.org_id
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "results": [
+                    #foreach($elem in $input.path('$.results'))
+                    {
+                      "path": {
+                        "kind": "$elem.path.kind",
+                        "reftime": $elem.path.reftime,
+                        "ref": "$elem.path.ref",
+                        "key": "$elem.path.key",
+                        "collection": "$elem.path.collection"
+                      },
+                      "value": {
+                        "key": "$elem.path.key",
+                        "owner": {
+                          "update_time": $elem.value.owner.update_time,
+                          "org_id": "$elem.value.owner.org_id",
+                          "updated_by": "$elem.value.owner.updated_by"
+                        },
+                        "details": {
+                          "title": "$elem.value.details.title",
+                          "cost": $elem.value.details.cost,
+                          "user_limit": $elem.value.details.user_limit,
+                          "description": "$elem.value.details.description",
+                          "inventory": $elem.value.details.inventory
+                        },
+                        "thumbnail": {
+                          "bucket": "$elem.value.thumbnail.bucket",
+                          "key": "$elem.value.thumbnail.key"
+                        }
+                      }
+                    }
+                    #if($foreach.hasNext),#end
+                    #end
+                  ],
+                  #if($input.path('$.total_count') != '')"total_count": $input.path('$.total_count'),#end
+                  "count": $input.path('$.count')
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /questions:
+    get:
+      description: >-
+        <b>[LAMBDA] - DONE (nico)</b>
+
+        Get questions and Polls
+      parameters:
+        - name: org_id
+          in: query
+          description: |
+            The org_id of the org to pull questions from
+          required: true
+          type: string
+        - name: limit
+          in: query
+          description: Limit the number of returned data
+          required: false
+          type: integer
+        - name: offset
+          in: query
+          description: Offset the start index for the returned data
+          required: false
+          type: integer
+      responses:
+        '200':
+          description: List of questions
+          schema:
+            $ref: '#/definitions/QuestionList'
+        '500':
+          description: Execution error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:questions_get/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "org_id" : "$input.params('org_id')",
+              "limit" : "$input.params('limit')",
+              "offset" : "$input.params('offset')"
+            }
+        requestParameters:
+          integration.request.querystring.org_id: method.request.querystring.org_id
+          integration.request.querystring.limit: method.request.querystring.limit
+          integration.request.querystring.offset: method.request.querystring.offset
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "results": [
+                    #foreach($elem in $input.path('$.results'))
+                    {
+                      "path": {
+                        "kind": "$elem.path.kind",
+                        "reftime": $elem.path.reftime,
+                        "ref": "$elem.path.ref",
+                        "key": "$elem.path.key",
+                        "collection": "$elem.path.collection"
+                      },
+                      "value": {
+                        "key": "$elem.path.key",
+                        "org_id": "$elem.value.org_id",
+                        "answerPoints": $elem.value.answerPoints,
+                        "correctPoints": $elem.value.correctPoints,
+                        "created_by": "$elem.value.created_by",
+                        "endsAt": $elem.value.endsAt,
+                        "questionText": "$util.urlEncode($elem.value.questionText)",
+                        "startsAt": $elem.value.startsAt,
+                        "type": "$elem.value.type",
+                        "answers": [
+                           #foreach($answer in $elem.value.answers)
+                              {
+                                 "text": "$util.urlEncode($answer.text)",
+                                 "correct": $answer.correct,
+                                 "count": $answer.count,
+                                 "order": $answer.order
+                              }
+                           #if($foreach.hasNext),#end
+                           #end
+                        ]
+                      }
+                    }
+                    #if($foreach.hasNext),#end
+                    #end
+                  ],
+                  #if($input.path('$.total_count') != '')"total_count": $input.path('$.total_count'),#end
+                  "count": $input.path('$.count')
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /answer_question:
+    post:
+      description: |
+        <b>[LAMBDA] - DONE (nico)</b>
+        Answer a question or poll.
+      parameters:
+        - name: response
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/Question'
+      responses:
+        '200':
+          description: Success if response accepted
+          schema:
+            $ref: '#/definitions/Success'
+        '403':
+          description: Question already answered
+          schema:
+            $ref: '#/definitions/Error'
+        '500':
+          description: Execution error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:answer_question/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: null
+        requestParameters: null
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          'already_answered':
+            statusCode: '403'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+  /users:
+    get:
+      description: >
+        <b>[LAMBDA] - DONE (nico)</b>
+
+        Get the requested user from the DB. User object contains current level info.
+      parameters:
+        - name: org_id
+          in: query
+          description: |
+            The org_id of the org the user subcribed to. If none provided then we'll inject the "global" level.
+          required: false
+          type: string
+        - name: user_id
+          in: query
+          description: 'The user_id of the user to lookup. If none provided then we looked the current connected user.'
+          required: false
+          type: string
+      responses:
+        '200':
+          description: The requested user
+          schema:
+            $ref: '#/definitions/User'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:users_get/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "org_id" : "$input.params('org_id')",
+              "user_id" : "$input.params('user_id')"
+            }
+        requestParameters:
+          integration.request.querystring.org_id: method.request.querystring.org_id
+          integration.request.querystring.user_id: method.request.querystring.user_id
+        cacheNamespace: cache-namespace
+        responses:
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                #set($elem = $input.path('$'))
+                {
+                  "IdentityId": "$elem.IdentityId",
+                  "identifier": "$elem.identifier",
+                  "provider": "$elem.provider",
+                  "firstname": "$elem.firstname",
+                  "lastname": "$elem.lastname",
+                  "photoURL": "$elem.photoURL",
+                  "email": "$elem.email",
+                  "displayName": "$elem.displayName",
+                  "username": "$elem.username",
+                  "city": "$elem.city",
+                  "message": "$elem.message",
+                  "gender": "$elem.gender",
+                  "birthdate": "$elem.birthdate"
+                  #if($elem.avatar.toString() != ''),"avatar": $input.json('$.avatar')#end
+                  #if($elem.level.toString() != ''),"level": $input.json('$.level')#end
+                }
+                
+                
+  /users/subscriptions:
+    get:
+      description: >
+        <b>[LAMBDA] - DONE (souvisay)</b>
+
+        List organizations the user subscribed to, sorted by popularity. Returns
+
+        the results from the relationship  'subscribes-to-org' between users ->
+
+        organizations. Will return 100 organizations by default.
+
+        You cannot sort Graph searches, so the sort is done in Lambda function.
+      parameters:
+        - name: limit
+          in: query
+          description: Limit the number of items returned. 100 Max. 1 Min. 25 default
+          required: false
+          type: integer
+          maximum: 100
+          minimum: 1
+        - name: offset
+          in: query
+          description: 'Where to start searching in the result array. Look for the "next" attributed is result data to know if there is more data.'
+          required: false
+          type: integer
+          minimum: 0
+      responses:
+        '200':
+          description: List of organizations sorted by popularity
+          schema:
+            $ref: '#/definitions/OrganizationList'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:users_subscriptions_get/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "limit" : "$input.params('limit')",
+              "offset" : "$input.params('offset')"
+            }
+        requestParameters:
+          integration.request.querystring.limit: method.request.querystring.limit
+          integration.request.querystring.offset: method.request.querystring.offset
+        cacheNamespace: cache-namespace
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "results": [
+                    #foreach($elem in $input.path('$.results'))
+                    {
+                      "path": {
+                        "kind": "$elem.path.kind",
+                        "reftime": $elem.path.reftime,
+                        "ref": "$elem.path.ref",
+                        "key": "$elem.path.key",
+                        "collection": "$elem.path.collection"
+                      },
+                      "value": {
+                        "id": "$elem.path.key",
+                        "name": "$elem.value.name",
+                        "contact_name": "$elem.value.contact_name",
+                        "contact_email": "$elem.value.contact_email",
+                        "type": "$elem.value.type",
+                        "type_other": "$elem.value.type_other",
+                        "created": $elem.value.created,
+                        "status": "$elem.value.status",
+                        "logo": "$elem.value.logo",
+                        "address1": "$elem.value.address1",
+                        "address2": "$elem.value.address2",
+                        "country": "$elem.value.country",
+                        "not_listed_sport": "$elem.value.not_listed_sport",
+                        "contact_phone": "$elem.value.contact_phone",
+                        "org_sport": "$elem.value.org_sport",
+                        "ticket_url": "$elem.value.ticket_url",
+                        "store_url": "$elem.value.store_url",
+                        #if($elem.value.social_urls != '')
+                        "social_urls": {
+                            "facebook": "$elem.value.social_urls.facebook",
+                            "linkedin": "$elem.value.social_urls.linkedin",
+                            "twitter": "$elem.value.social_urls.twitter",
+                            "youtube": "$elem.value.social_urls.youtube"
+                        },
+                        #end
+                        #if($elem.value.level != '')
+                        "level": {
+                            "previous_lvl_pts": $elem.value.level.previous_lvl_pts,
+                            "level": $elem.value.level.level,
+                            "org_id": "$elem.value.level.org_id",
+                            "IdentityId": "$elem.value.level.IdentityId",
+                            "points": $elem.value.level.points,
+                            "next_lvl_pts": $elem.value.level.next_lvl_pts
+                            },
+                        #end
+                        #if($elem.value.following != '')
+                        "following": $elem.value.following
+                        #else
+                        "following": false
+                        #end
+                      }
+                    }
+                    #if($foreach.hasNext),#end
+                    #end
+                  ],
+                  #if($input.path('$.total_count') != '')"total_count": $input.path('$.total_count'),#end
+                  #if($input.path('$.next') != '')"next": "$input.path('$.next')",#end
+                  "count": $input.path('$.count')
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  '/users/subscriptions/{org_id}':
+    put:
+      description: "[LAMBDA] - DONE (Souvisay)\n\nSubscribes the user to an organization. \n\n<b>Implementation:</b>\n\nThis must create all the relationships as described in the Hackpad\\nhttps://sportarchive.hackpad.com/SA-Site-Data-Model-bdfshZWb3SC#:h=Graph-relations\n\nAs example you can check 'subscribeChannel' method in application/libraries/orchestrate/Users.php in sa_site_v2\n"
+      parameters:
+        - name: org_id
+          in: path
+          description: ID of organization to subscribe to
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Subsription confirmation
+          schema:
+            $ref: '#/definitions/Success'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:users_subscriptions_put/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "org_id" : "$input.params('org_id')"
+            }
+        requestParameters:
+          integration.request.path.org_id: method.request.path.org_id
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+    delete:
+      description: "<b>[LAMBDA] - DONE (souvisay) </b>\n\nUnsubscribe the user from an organization. \n\n<b>Implementation:</b>\n\nThis must remove all the relationships as described in the Hackpad\\nhttps://sportarchive.hackpad.com/SA-Site-Data-Model-bdfshZWb3SC#:h=Graph-relations\n\nAs example you can check 'unsubscribeChannel' method in application/libraries/orchestrate/Users.php in sa_site_v2\n"
+      parameters:
+        - name: org_id
+          in: path
+          description: ID of organization to unsubscribe from
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Unsubsription confirmation
+          schema:
+            $ref: '#/definitions/Success'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:users_subscriptions_delete/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "org_id" : "$input.params('org_id')"
+            }
+        requestParameters:
+          integration.request.path.org_id: method.request.path.org_id
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /users/events:
+    get:
+      description: |
+        <b>[LAMBDA] - TODO</b>
+
+        Return only the ongoing and future events for the organization the user has subscribed to.
+      responses:
+        '200':
+          description: List of events from all orgs or provided org_id
+          schema:
+            $ref: '#/definitions/EventList'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:users_events_get/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: null
+        requestParameters: null
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+        
+  /users/event_info/{event_id}:
+    get:
+      description: |
+
+        <b>[LAMBDA] - DONE (Tested)</b>
+
+        Get info about the user for a specific event. This will return the number shot he has left, and the pictures submitted, and more.
+      parameters:
+        - name: event_id
+          in: path
+          description: 'ID of an event to filter with to get event context data, like camera shots'
+          required: true
+          type: string
+      responses:
+        '200':
+          description: User Event Info object contains shots info
+          schema:
+            $ref: '#/definitions/UserEventInfo'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:users_event_info_get/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "event_id" : "$input.params('event_id')"
+            }
+        requestParameters:
+          integration.request.path.event_id: method.request.path.event_id
+        cacheNamespace: cache-namespace
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /users/stats:
+    get:
+      description: |
+        <b>[LAMBDA] - DONE</b>
+
+        Get user stats globally or for an organization
+      parameters:
+        - name: org_id
+          in: query
+          description: ID the organization to filter with and get stats only for this organization
+          required: false
+          type: string
+        - name: user_id
+          in: query
+          description: Specify the user_id of the user you want to pull the stats from. By default will pull the stats of the current user.
+          type: string
+      responses:
+        '200':
+          description: User Stat list
+          schema:
+            $ref: '#/definitions/UserStatList'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:users_stats_get/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "org_id" : "$input.params('org_id')",
+              "user_id" : "$input.params('user_id')"
+            }
+        requestParameters:
+          integration.request.querystring.org_id: method.request.querystring.org_id
+          integration.request.querystring.user_id: method.request.querystring.user_id
+        cacheNamespace: cache-namespace
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /users/achievements:
+    get:
+      description: |
+        
+        <b>[LAMBDA] - TODO</b>
+
+        Get user achievements for an organization or globally
+      parameters:
+        - name: org_id
+          in: query
+          description: ID the organization to filter with and get achivements only for this organization
+          required: false
+          type: string
+      responses:
+        '200':
+          description: Achievements list
+          schema:
+            $ref: '#/definitions/UserAchievementList'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:users_achievements_get/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "org_id" : "$input.params('org_id')"
+            }
+        requestParameters:
+          integration.request.querystring.org_id: method.request.querystring.org_id
+        cacheNamespace: cache-namespace
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /users/profile:
+    put:
+      description: |
+        [LAMBDA] - DONE
+
+        Update a user profile. Update the username for example.
+        Or for refresh if
+
+
+        his social info has changed.
+      parameters:
+        - name: user
+          in: body
+          description: User profile with updated information
+          required: true
+          schema:
+            $ref: '#/definitions/User'
+      responses:
+        '200':
+          description: Update confirmation
+          schema:
+            $ref: '#/definitions/Success'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:users_profile_put/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: null
+        requestParameters: null
+        cacheNamespace: cache-namespace
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /users/avatars:
+    get:
+      description: |
+        <b>[LAMBDA] - DONE</b>
+
+        Get the Avatar this user has selected. To get it we use the 'has-avatar' relationship we create when the user select an avatar.
+      responses:
+        '200':
+          description: Avatar object
+          schema:
+            $ref: '#/definitions/Avatar'
+        '404':
+          description: No Avatar
+          schema:
+            $ref: '#/definitions/Error'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:users_avatars_get/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: null
+        requestParameters: null
+        cacheNamespace: cache-namespace
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+          'unknown.*':
+            statusCode: '404'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+    delete:
+      description: |
+
+        <b>[LAMBDA] - DONE</b>
+        Remove avatar assignment to a user
+      responses:
+        '200':
+          description: Success. Avatar association removed
+          schema:
+            $ref: '#/definitions/Success'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:users_avatars_delete/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: null
+        requestParameters: null
+        cacheNamespace: cache-namespace
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }  
+        
+  '/users/avatars/{avatar_id}':
+    put:
+      description: |
+
+        <b>[LAMBDA] - DONE</b>
+        Assign an avatar to the user.
+      parameters:
+        - name: avatar_id
+          in: path
+          description: ID of the Avatar to assign to the user
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Update confirmation
+          schema:
+            $ref: '#/definitions/Success'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:users_avatars_put/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "avatar_id" : "$input.params('avatar_id')"
+            }
+        requestParameters:
+          integration.request.path.avatar_id: method.request.path.avatar_id
+        cacheNamespace: cache-namespace
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /events:
+    get:
+      description: "<b>[LAMBDA] (DONE - Tested)</b>\n\nReturn list of ongoing and future events for all organizations or the one requested using 'org_id' parameter. \n Provide 'from' parameter to look back in the past. By default the events returned are ongoing or future based on the current time."
+      parameters:
+        - name: org_id
+          in: query
+          description: ID the organization to filter with
+          required: false
+          type: string
+        - name: limit
+          in: query
+          description: Max number of returned items
+          required: false
+          type: integer
+          maximum: 100
+          minimum: 1
+        - name: offset
+          in: query
+          description: Where to start searching in the result array
+          required: false
+          type: integer
+        - name: from
+          in: query
+          description: Timestamp epoch time UTC where to start looking for events. If nothing is provided it will return the events that are ongoing or future. Provide this 'from' parameter allows you to look in the past for older events.
+          required: false
+          type: integer
+      responses:
+        '200':
+          description: List of events from all orgs or provided org_id
+          schema:
+            $ref: '#/definitions/EventList'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:events/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "org_id" : "$input.params('org_id')",
+              "limit" : "$input.params('limit')",
+              "offset" : "$input.params('offset')",
+              "from" : "$input.params('from')"
+            }
+        requestParameters:
+          integration.request.querystring.org_id: method.request.querystring.org_id
+          integration.request.querystring.limit: method.request.querystring.limit
+          integration.request.querystring.offset: method.request.querystring.offset
+          integration.request.querystring.from: method.request.querystring.from
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /sports:
+    get:
+      description: |
+        <b>[PROXY]</b> <b>STATUS</b>: DONE - TEST<br>
+        Return list of sports
+      responses:
+        '200':
+          description: List of Sports
+          schema:
+            $ref: '#/definitions/SportList'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: http
+        uri: 'https://api.orchestrate.io/v0/sports'
+        httpMethod: GET
+        requestParameters:
+          integration.request.header.Authorization: "%ORCH_CREDS%"
+        cacheNamespace: cache-namespace
+        responses:
+          '200':
+            statusCode: '200'
+            responseTemplates:
+              application/json: null
+          '5d{2}':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                   "errorMessage" : "$input.json('$.message')"
+  /social_posts:
+    get:
+      description: |
+        <b>[LAMBDA] - Done</b>
+
+        Get a list of posts based on the parameters provided. Could be a mix of all parameters for granular searches.
+        Using Several parameters uses AND for combining. Fuzzy search is activated on the message only
+      parameters:
+        - name: org_id
+          in: query
+          description: ID the organization to filter with
+          required: false
+          type: string
+        - name: social_type
+          in: query
+          description: "Type of social posts you want: instagram, youtube, facebook, twitter, sportarchive"
+          required: false
+          type: string
+        - name: event_id
+          in: query
+          description: Id of the event to filter with
+          required: false
+          type: string
+        - name: created_by
+          in: query
+          description: |
+            IMPORTANT: Don't forget to URL encode any email address. Filter with the ID of the user who created the posts
+          required: false
+          type: string
+        - name: message
+          in: query
+          description: Global search on the posts with arbitrary search string. Fuzzy search activated by default. Search the messages themselves
+          required: false
+          type: string
+        - name: limit
+          in: query
+          description: Max number of returned items
+          required: false
+          type: integer
+          maximum: 100
+          minimum: 1
+        - name: offset
+          in: query
+          description: Where to start searching in the result array
+          required: false
+          type: integer
+        - name: from
+          in: query
+          description: Date to start looking for posts. Inclusive
+          required: false
+          type: integer
+        - name: to
+          in: query
+          description: Date to stop looking for posts. Inclusive
+          required: false
+          type: integer
+      responses:
+        '200':
+          description: List of posts
+          schema:
+            $ref: '#/definitions/PostsList'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:social_posts_get/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "org_id" : "$input.params('org_id')",
+              "social_type" : "$input.params('social_type')",
+              "limit" : "$input.params('limit')",
+              "offset" : "$input.params('offset')",
+              "event_id" : "$input.params('event_id')",
+              "message" : "$input.params('message')",
+              "from" : "$input.params('from')",
+              "to" : "$input.params('to')",
+              "created_by" : "$input.params('created_by')"
+            }
+        requestParameters:
+          integration.request.querystring.org_id: method.request.querystring.org_id
+          integration.request.querystring.social_type: method.request.querystring.social_type
+          integration.request.querystring.limit: method.request.querystring.limit
+          integration.request.querystring.offset: method.request.querystring.offset
+          integration.request.querystring.event_id: method.request.querystring.event_id
+          integration.request.querystring.message: method.request.querystring.message
+          integration.request.querystring.from: method.request.querystring.from
+          integration.request.querystring.to: method.request.querystring.to
+          integration.request.querystring.created_by: method.request.querystring.created_by
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "results": [
+                    #foreach($elem in $input.path('$.results'))
+                    {
+                      "path": {
+                        "kind": "$elem.path.kind",
+                        "reftime": $elem.path.reftime,
+                        "ref": "$elem.path.ref",
+                        "key": "$elem.path.key",
+                        "collection": "$elem.path.collection"
+                      },
+                      "value": {
+                        "attachments": [
+                           #foreach($attachment in $elem.value.attachments)
+                              {
+                                 "title": "$attachment.title",
+                                 "description": "$util.urlEncode($attachment.description)",
+                                 "type": "$attachment.type",
+                                 "asset_url": "$attachment.asset_url",
+                                 "thumb_sd_url": "$attachment.thumb_sd_url",
+                                 "thumb_hd_url": "$attachment.thumb_hd_url"
+                              }
+                           #if($foreach.hasNext),#end
+                           #end
+                        ],
+                        #if($elem.value.social != '')
+                        "social": {
+                             "sportarchive" : "$elem.value.social.sportarchive",
+                             "facebook" : "$elem.value.social.facebook",
+                             "twitter" : "$elem.value.social.twitter",
+                             "youtube" : "$elem.value.social.youtube",
+                             "instagram" : "$elem.value.social.instagram"
+                          },
+                        #end
+                        "message": "$util.urlEncode($elem.value.message)",
+                        "created_by": "$elem.value.created_by",
+                        "org_id": "$elem.value.org_id",
+                        "timestamp": $elem.value.timestamp
+                      }
+                    }
+                    #if($foreach.hasNext),#end
+                    #end
+                  ],
+                  #if($input.path('$.total_count') != '')"total_count": $input.path('$.total_count'),#end
+                  "count": $input.path('$.count')
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /avatars:
+    get:
+      description: |
+        <b>[LAMBDA] - Done</b>
+
+        Get a list of avatars
+      responses:
+        '200':
+          description: List of avatars
+          schema:
+            $ref: '#/definitions/AvatarList'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:avatars/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates: null
+        requestParameters: null
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "results" : [
+                    #foreach($elem in $input.path('$'))
+                    {
+                      "id": $elem.path.key,
+                      "image_url": "$elem.value.image_url",
+                      "level": "$elem.value.level"
+                    }
+                    #if($foreach.hasNext),#end
+                    #end
+                  ]
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /countries:
+    get:
+      description: "<b>[LAMBDA]</b> \n<b>STATUS</b>: DONE (Steve) -\n\nReturn list of countries\n"
+      responses:
+        '200':
+          description: List of Sports
+          schema:
+            $ref: '#/definitions/CountryList'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:countries/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates: null
+        requestParameters: null
+        cacheNamespace: cache-namespace
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "results" : [
+                    #foreach($elem in $input.path('$'))
+                    {
+                      "id": "$elem.cca3",
+                      "name": "$elem.name.common",
+                      "official": "$elem.name.official",
+                      "region": "$elem.region",
+                      "subregion": "$elem.subregion"
+                    }
+                    #if($foreach.hasNext),#end
+                    #end
+                  ]
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /organization:
+    get:
+      description: "<b>[LAMBDA]</b> \n\n<b>STATUS</b>: DONE - Tested<br>\n\nGet one single organization\n"
+      parameters:
+        - name: org_id
+          in: query
+          description: organization ID
+          required: true
+          type: string
+      responses:
+        '200':
+          description: The requested organization
+          schema:
+            $ref: '#/definitions/Organization'
+        '404':
+          description: No Organization
+          schema:
+            $ref: '#/definitions/Error'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:organization_get/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "org_id" : "$input.params('org_id')"
+            }
+        requestParameters: 
+          integration.request.querystring.org_id: method.request.querystring.org_id
+        cacheNamespace: cache-namespace
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                   #set($org = $input.path('$'))
+                   "id": "$org.id",
+                   "name": "$org.name",
+                   "contact_name": "$org.contact_name",
+                   "contact_email": "$org.contact_email",
+                   "type": "$org.type",
+                   "type_other": "$org.type_other",
+                   "created": $org.created,
+                   "status": "$org.status",
+                   "logo": "$org.logo",
+                   "address1": "$org.address1",
+                   "address2": "$org.address2",
+                   "country": "$org.country",
+                   "not_listed_sport": "$org.not_listed_sport",
+                   "contact_phone": "$org.contact_phone",
+                   "org_sport": "$org.org_sport",
+                   "ticket_url": "$org.ticket_url",
+                   "store_url": "$org.store_url",
+                   #if($org.social_urls != '')
+                   "social_urls": {
+                     "facebook": "$org.social_urls.facebook",
+                     "linkedin": "$org.social_urls.linkedin",
+                     "twitter": "$org.social_urls.twitter",
+                     "youtube": "$org.social_urls.youtube"
+                   },
+                   #end
+                   #if($org.level != '')
+                   "level": {
+                     "previous_lvl_pts": $org.level.previous_lvl_pts,
+                     "level": $org.level.level,
+                     "org_id": "$org.level.org_id",
+                     "IdentityId": "$org.level.IdentityId",
+                     "points": $org.level.points,
+                     "next_lvl_pts": $org.level.next_lvl_pts
+                   },
+                   #end
+                   #if($org.following != '')
+                   "following": $org.following
+                   #else
+                   "following": false
+                   #end
+                }
+          'unknown.*':
+            statusCode: '404'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /organizations:
+    get:
+      description: "<b>[LAMBDA]</b> \n\n<b>STATUS</b>: DONE - Tested<br>\n\nSearch through a list of organizations sorted by popularity\n"
+      parameters:
+        - name: query
+          in: query
+          description: pattern to search for
+          required: false
+          type: string
+        - name: sport
+          in: query
+          description: sport to filter with
+          required: false
+          type: string
+        - name: country
+          in: query
+          description: country to filter with
+          required: false
+          type: string
+        - name: limit
+          in: query
+          description: Max number of returned items. Default 25
+          required: false
+          type: integer
+          maximum: 100
+          minimum: 1
+        - name: offset
+          in: query
+          description: Where to start searching in the result array
+          required: false
+          type: integer
+      responses:
+        '200':
+          description: List of organizations
+          schema:
+            $ref: '#/definitions/OrganizationList'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:organizations/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "query" : "$input.params('query')",
+              "sport" : "$input.params('sport')",
+              "country" : "$input.params('country')",
+              "limit" : "$input.params('limit')",
+              "offset" : "$input.params('offset')"
+            }
+        requestParameters:
+          integration.request.querystring.query: method.request.querystring.query
+          integration.request.querystring.sport: method.request.querystring.sport
+          integration.request.querystring.country: method.request.querystring.country
+          integration.request.querystring.limit: method.request.querystring.limit
+          integration.request.querystring.offset: method.request.querystring.offset
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "results": [
+                    #foreach($elem in $input.path('$.results'))
+                    {
+                      "path": {
+                        "kind": "$elem.path.kind",
+                        "reftime": $elem.path.reftime,
+                        "ref": "$elem.path.ref",
+                        "key": "$elem.path.key",
+                        "collection": "$elem.path.collection"
+                      },
+                      "value": {
+                        "id": "$elem.path.key",
+                        "name": "$elem.value.name",
+                        "contact_name": "$elem.value.contact_name",
+                        "contact_email": "$elem.value.contact_email",
+                        "type": "$elem.value.type",
+                        "type_other": "$elem.value.type_other",
+                        "created": $elem.value.created,
+                        "status": "$elem.value.status",
+                        "logo": "$elem.value.logo",
+                        "address1": "$elem.value.address1",
+                        "address2": "$elem.value.address2",
+                        "country": "$elem.value.country",
+                        "not_listed_sport": "$elem.value.not_listed_sport",
+                        "contact_phone": "$elem.value.contact_phone",
+                        "org_sport": "$elem.value.org_sport",
+                        "ticket_url": "$elem.value.ticket_url",
+                        "store_url": "$elem.value.store_url",
+                        #if($elem.value.social_urls != '')
+                        "social_urls": {
+                            "facebook": "$elem.value.social_urls.facebook",
+                            "linkedin": "$elem.value.social_urls.linkedin",
+                            "twitter": "$elem.value.social_urls.twitter",
+                            "youtube": "$elem.value.social_urls.youtube"
+                        },
+                        #end
+                        #if($elem.value.level != '')
+                        "level": {
+                            "previous_lvl_pts": $elem.value.level.previous_lvl_pts,
+                            "level": $elem.value.level.level,
+                            "org_id": "$elem.value.level.org_id",
+                            "IdentityId": "$elem.value.level.IdentityId",
+                            "points": $elem.value.level.points,
+                            "next_lvl_pts": $elem.value.level.next_lvl_pts
+                        },
+                        #end
+                        #if($elem.value.following != '')
+                        "following": $elem.value.following
+                        #else
+                        "following": false
+                        #end
+                      }
+                    }
+                    #if($foreach.hasNext),#end
+                    #end
+                  ],
+                  #if($input.path('$.total_count') != '')"total_count": $input.path('$.total_count'),#end
+                  "count": $input.path('$.count')
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  '/vote_up/{asset_id}':
+    put:
+      description: "<b>[LAMBDA]</b> \n\n\n<b>STATUS</b>: DONE - <b style=\"color: red\">UN-TESTED</b><br>\n\nVote up on an asset\n"
+      parameters:
+        - name: asset_id
+          in: path
+          description: ID of the asset to vote up on
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Vote up confirmation
+          schema:
+            $ref: '#/definitions/Success'
+        '403':
+          description: Forbidden. Already Voted
+          schema:
+            $ref: '#/definitions/Error'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:vote_up/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "asset_id" : "$input.params('asset_id')"
+            }
+        requestParameters:
+          integration.request.path.asset_id: method.request.path.asset_id
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+          'already_voted':
+            statusCode: '403'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : "You already voted on this picture. Moving on."
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  '/report/{asset_id}':
+    put:
+      description: |
+        [LAMBDA] (DONE - Untested)
+
+        Report on an asset for being inapropriate. You can specify the type of
+        issue with the asset
+      parameters:
+        - name: asset_id
+          in: path
+          description: ID of the asset to report on
+          required: true
+          type: string
+        - name: type
+          in: query
+          description: Type of issue
+          required: false
+          type: string
+          enum:
+            - abuse
+            - inapropriate
+      responses:
+        '200':
+          description: Report confirmation
+          schema:
+            $ref: '#/definitions/Success'
+        '403':
+          description: Forbidden. Already reported
+          schema:
+            $ref: '#/definitions/Error'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:report/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "asset_id" : "$input.params('asset_id')",
+              "type" : "$input.params('type')"
+            }
+        requestParameters:
+          integration.request.path.asset_id: method.request.path.asset_id
+          integration.request.querystring.type: method.request.querystring.type
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+          'already_reported':
+            statusCode: '403'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : "You already reported this picture. Moving on."
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  /rankings:
+    get:
+      description: |
+        
+        <b>[LAMBDA]</b>
+
+        <b>STATUS</b>: DONE - <b style="color: green">TESTED</b>
+        
+        Sorted list of Users sorted by points. If no {org_id} is provided, we'll
+        return the global rankings.
+        
+      parameters:
+        - name: org_id
+          in: query
+          description: ID of the organization to filter with
+          required: false
+          type: string
+        - name: limit
+          in: query
+          description: Limit the number of users returned. 100 Max. 10 Default. 1 Min
+          required: false
+          type: integer
+          maximum: 100
+          minimum: 1
+        - name: offset
+          in: query
+          description: Where to start searching in the result array
+          required: false
+          type: integer
+      responses:
+        '200':
+          description: List of rankings sorted by ranking
+          schema:
+            $ref: '#/definitions/UserList'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:rankings/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "org_id" : "$input.params('org_id')",
+              "limit" : "$input.params('limit')",
+              "offset" : "$input.params('offset')"
+            }
+        requestParameters:
+          integration.request.querystring.org_id: method.request.querystring.org_id
+          integration.request.querystring.limit: method.request.querystring.limit
+          integration.request.querystring.offset: method.request.querystring.offset
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json:  |
+                {
+                  #set($org_id = $input.path('$.org_id'))
+                  "org_id": "$org_id",
+                  "results": [
+                    #foreach($elem in $input.path('$.results'))
+                    {
+                      "path": {
+                        "kind": "$elem.path.kind",
+                        "reftime": $elem.path.reftime,
+                        "ref": "$elem.path.ref",
+                        "key": "$elem.path.key",
+                        "collection": "$elem.path.collection"
+                      },
+                      "value": {
+                        "IdentityId": "$elem.value.IdentityId",
+                        "identifier": "$elem.value.identifier",
+                        "provider": "$elem.value.provider",
+                        "firstname": "$elem.value.firstname",
+                        "lastname": "$elem.value.lastname",
+                        "photoURL": "$elem.value.photoURL",
+                        "email": "$elem.value.email",
+                        "displayName": "$elem.value.displayName",
+                        "username": "$elem.value.username",
+                        "city": "$elem.value.city",
+                        "message": "$elem.value.message",
+                        "gender": "$elem.value.gender",
+                        "birthdate": "$elem.value.birthdate"
+                        #set($avatar = $elem.value.avatar)
+                        #if($elem.value.avatar.toString() != '')
+                        ,"avatar": {
+                          "id": $avatar.id,
+                          "level": $avatar.level,
+                          "image_url": "$avatar.image_url",
+                          "large_url": "$avatar.large_url",
+                          "medium_url": "$avatar.medium_url",
+                          "small_url": "$avatar.small_url"
+                        }
+                        #end
+                        #if($elem.value.level.toString() != '')
+                        ,"level": {
+                          "previous_lvl_pts": $elem.value.level.previous_lvl_pts,
+                          "level": $elem.value.level.level,
+                          "org_id": "$elem.value.level.org_id",
+                          "IdentityId": "$elem.value.level.IdentityId",
+                          "points": $elem.value.level.points,
+                          "next_lvl_pts": $elem.value.level.next_lvl_pts
+                        }
+                        #end
+                      }
+                    }
+                    #if($foreach.hasNext),#end
+                    #end
+                  ],
+                  #if($input.path('$.total_count') != '')"total_count": $input.path('$.total_count'),#end
+                  "count": $input.path('$.count')
+                }
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }              
+  '/asset_upload':
+    put:
+      description: |
+        
+        [LAMBDA] (done)
+      
+        Initiate the upload of an asset (a photo taken by the user) to AWS S3. Call this to get the Bucket, Key and Encode_id so you can sign the upload URL and call /asset_upload_finish once done.
+      parameters:
+        - name: upload
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/UploadStart'
+      responses:
+        '200':
+          description: 'Get an object that contains the Asset ID, its data and Signed URLs to use for uploading the asset directly to AWS S3'
+          schema:
+            $ref: '#/definitions/AssetUpload'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:asset_upload/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: null
+        requestParameters: null
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+  '/asset_upload_finish/{encode_id}':
+    put:
+      description: |
+        
+        [LAMBDA] (done)
+        Confirm the upload of the asset. Call this after calling asset_upload
+        and AFTER uploading the asset to S3. This will update our DB and mark the
+        asset as uploaded.
+      parameters:
+        - name: encode_id
+          in: path
+          description: ID of the encode returned by /asset_upload before
+          required: true
+          type: string
+      responses:
+        '200':
+          description: Confirmation that the Asset is now upload and in the DB
+          schema:
+            $ref: '#/definitions/Success'
+        '500':
+          description: Execution Error
+          schema:
+            $ref: '#/definitions/Error'
+      x-amazon-apigateway-auth:
+        type: aws_iam
+      x-amazon-apigateway-integration:
+        type: aws
+        uri: 'arn:aws:apigateway:us-east-1:lambda:path/2015-03-31/functions/arn:aws:lambda:us-east-1:%AWS_ACCOUNT%:function:asset_upload_finish/invocations'
+        credentials: 'arn:aws:iam::*:user/*'
+        httpMethod: POST
+        requestTemplates:
+          application/json: |
+            {
+              "encode_id" : "$input.params('encode_id')"
+            }
+        requestParameters:
+          integration.request.path.encode_id: method.request.path.encode_id
+        cacheNamespace: cache-namespace
+        cacheKeyParameters: null
+        responses:
+          default:
+            statusCode: '200'
+            responseParameters: null
+            responseTemplates:
+              application/json: null
+          'error.*':
+            statusCode: '500'
+            responseParameters: null
+            responseTemplates:
+              application/json: |
+                {
+                  "errorMessage" : $input.json('$.errorMessage')
+                }
+definitions:
+  Error:
+    type: object
+    required:
+      - errorMessage
+    properties:
+      errorMessage:
+        type: string
+  Success:
+    type: object
+    required:
+      - message
+    properties:
+      message:
+        type: string
+  Username:
+    type: object
+    required:
+      - username
+    properties:
+      username:
+        type: string
+  Country:
+    type: object
+    description: One country
+    required:
+      - id
+      - name
+      - official
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      official:
+        type: string
+      region:
+        type: string
+      subregion:
+        type: string
+  CountryList:
+    type: object
+    description: List of countries
+    required:
+      - results
+    properties:
+      results:
+        type: array
+        items:
+          type: object
+          $ref: "#/definitions/Country"
+  Avatar:
+    type: object
+    description: One Avatar
+    required:
+      - image_url
+      - level
+      - id
+    properties:
+      id:
+        description: Key of the object in Orchestrate
+        type: integer
+      image_url:
+        description: URL of the avarar image in 128px height. Default image
+        type: string
+      large_url:
+        description: URL of the avarar image in 128px height.
+        type: string
+      medium_url:
+        description: URL of the avarar image in 64px height.
+        type: string
+      small_url:
+        description: URL of the avarar image in 64px height.
+        type: string
+      level:
+        description: Minimum level for this avatar. If the my level is < as Avatar level then the avatar is locked and show grayed out.
+        type: integer
+  UserStat:
+    type: object
+    description: One Stat Object. This represent an action and the points earned for this action and the number of time action got triggerd.
+    required:
+      - last_points
+      - updated
+      - score
+      - name
+      - key
+      - update_count
+      - org_id
+      - IdentityId
+      - icon
+    properties:
+      name:
+        description: Name of the stat 
+        type: string
+      key:
+        description: DB Key for this object
+        type: string
+      update_count:
+        description: Number of time this stat has been updated
+        type: integer
+      IdentityId:
+        description: ID of the user for this stat
+        type: string
+      org_id:
+        description: Org ID for this action. Could be 'global' for a global action
+        type: string
+      last_points:
+        description: Number of points earned last time
+        type: string
+      updated:
+        description: Time last updated
+        type: integer
+      score:
+        description: The current score for this stats. How much points it added to the user total points
+        type: integer
+      icon:
+        description: Public URL of the icon for this stat
+        type: string
+  UserStatList:
+    type: object
+    description: List of `Stat` object as returned by Orchestrate.io
+    required:
+      - results
+      - count
+    properties:
+      results:
+        type: array
+        items:
+          type: object
+          required:
+            - path
+            - reftime
+            - value
+          properties:
+            value:
+              $ref: '#/definitions/UserStat'
+            path:
+              $ref: '#/definitions/Path'
+            reftime:
+              type: integer
+      count:
+        type: integer
+        description: Number of items in results array
+      total_count:
+        type: integer
+        description: Present when performing a search. Not a list.
+  UserAchievement:
+    type: object
+    description: One Achievement object
+    required:
+      - id
+      - label
+      - type
+    properties:
+      id:
+        description: ID for this achievement
+        type: string
+      label:
+        description: Label to be displayed for this achievement
+        type: string
+      image_url:
+        description: URL for this achivement badge image
+        type: string
+      type:
+        type: string
+        description: Based on the type the icon will be different. The list of achievements will be sorted by type
+        enum:
+          - 1@standard
+          - 2@rare
+          - 3@epic
+          - 4@legendary
+  UserAchievementList:
+    type: object
+    description: List of `Achievement` object as returned by Orchestrate.io
+    required:
+      - results
+      - count
+    properties:
+      results:
+        type: array
+        items:
+          type: object
+          required:
+            - path
+            - reftime
+            - value
+          properties:
+            value:
+              $ref: '#/definitions/UserAchievement'
+            path:
+              $ref: '#/definitions/Path'
+            reftime:
+              type: integer
+      count:
+        type: integer
+        description: Number of items in results array
+      total_count:
+        type: integer
+        description: Present when performing a search. Not a list.
+  AvatarList:
+    type: object
+    description: List of all `Avatar` object as returned by Orchestrate.io
+    required:
+      - results
+    properties:
+      results:
+        type: array
+        items:
+          type: object
+          $ref: "#/definitions/Avatar"
+  User:
+    type: object
+    description: One User
+    required:
+      - IdentityId
+      - identifier
+      - email
+      - provider
+    properties:
+      IdentityId:
+        type: string
+        description: IdentityId coming from AWS Cognito. We identify the user with this.
+      identifier:
+        type: string
+        description: "ID coming from the specific social platform. Different format, it's ok."
+      provider:
+        type: string
+        description: 'Name of the social provide (google, facebook)'
+      firstname:
+        type: string
+      lastname:
+        type: string
+      photoURL:
+        type: string
+        description: Photo coming from social media
+      email:
+        type: string
+      displayName:
+        type: string
+        description: Coming from social if any. Combine firstname / lastname if none available
+      username:
+        type: string
+        description: Can be entered in the mobile app. Empty by default
+      address1:
+        type: string
+      address2:
+        type: string
+      zip:
+        type: string
+      country:
+        type: string
+      message:
+        type: string
+      gender:
+        type: string
+      birthdate:
+        type: string
+      avatar:
+        description: Current avatar selected
+        $ref: '#/definitions/Avatar'
+      level:
+        description: Global level of the user in order to determine his global ranking and avatar choices. Could be an org level if not global level.
+        $ref: '#/definitions/Level'
+  UserList:
+    type: object
+    description: List of `User` object as returned by Orchestrate.io
+    required:
+      - results
+      - count
+      - org_id
+    properties:
+      org_id:
+        type: string
+        description: "Return back the org_id that was submitted"
+      results:
+        type: array
+        items:
+          type: object
+          required:
+            - path
+            - reftime
+            - value
+          properties:
+            value:
+              $ref: '#/definitions/User'
+            path:
+              $ref: '#/definitions/Path'
+            reftime:
+              type: integer
+      count:
+        type: integer
+        description: Number of items in results array
+      total_count:
+        type: integer
+        description: Present when performing a search. Not a list.
+  Question:
+    type: object
+    description: One Question
+    required:
+      - org_id
+      - answerPoints
+      - correctPoints
+      - created_by
+      - endsAt
+      - questionText
+      - startsAt
+      - type
+      - answers
+    properties:
+      key:
+        type: string
+        description: uniqu identifier key for this question
+      org_id:
+        type: string
+        description: org_id for this question
+      answerPoints:
+        type: string
+        description: "Points that can be earned just by answering "
+      correctPoints:
+        type: string
+        description: 'Points earned if answered correctly'
+      created_by:
+        type: string
+        description: 'Admin that created the question'
+      startsAt:
+        type: integer
+        description: 'When the question/poll is starting (UTC Time)'
+      endsAt:
+        type: integer
+        description: 'When the question/poll is ending (UTC Time)'
+      questionText:
+        type: string
+        description: 'The actual question URL encoded'
+      type:
+        type: string
+        description: 'Type of question: poll or question'
+      answers:
+        type: array
+        items:
+          type: object
+          $ref: "#/definitions/Answer"
+  Answer:
+    type: object
+    description: An anwser to a question
+    required:
+      - text
+      - correct
+      - count
+      - order
+    properties:
+      text:
+        type: string
+        description: The answer text
+      correct:
+        type: boolean
+        description: Is this the correct answer or not
+      count:
+        type: integer
+        description: number of replies for this answer
+      order:
+        type: integer
+        description: the order for this answer can also be used as id
+      responded:
+        type: boolean
+        description: Available only when the user responded. True if the user checked this answer. False if not.
+  Reward:
+    type: object
+    description: One reward
+    required:
+      - owner
+      - details
+      - thumbnail
+    properties:
+      owner:
+        type: object
+        required:
+          - update_time
+          - org_id
+          - updated_by
+        properties:
+          update_time:
+            type: string
+            description: Time of thie reward last update
+          org_id:
+            type: string
+            description: ID of the organization
+          updated_by:
+            type: string
+            description: Admin of updated the reward
+      details:
+        type: object
+        required:
+          - title
+          - cost
+          - user_limit
+          - description
+          - inventory
+        properties:
+          title:
+            type: string
+            description: Title of the reward
+          cost:
+            type: string
+            description: Cost in points to redeem this reward
+          user_limit:
+            type: integer
+            description: Max number of time a user can redeem this reward
+          description:
+            type: string
+            description: Reward description
+          inventory:
+            type: integer
+            description: How many reward items in the inventory. How many available.
+          
+  RewardList:
+    type: object
+    description: List of `Reward` object returned when calling /rewards GET
+    required:
+      - results
+      - count
+    properties:
+      results:
+        type: array
+        items:
+          type: object
+          required:
+            - path
+            - reftime
+            - value
+          properties:
+            value:
+              $ref: '#/definitions/Reward'
+            path:
+              $ref: '#/definitions/Path'
+            reftime:
+              type: integer
+      count:
+        type: integer
+        description: Number of items in results array
+      total_count:
+        type: integer
+        description: Present when performing a search. Not a list.
+  QuestionList:
+    type: object
+    description: List of `Question` object returned when calling /questions GET
+    required:
+      - results
+      - count
+    properties:
+      results:
+        type: array
+        items:
+          type: object
+          required:
+            - path
+            - reftime
+            - value
+          properties:
+            value:
+              $ref: '#/definitions/Question'
+            path:
+              $ref: '#/definitions/Path'
+            reftime:
+              type: integer
+      count:
+        type: integer
+        description: Number of items in results array
+      total_count:
+        type: integer
+        description: Present when performing a search. Not a list.
+  Asset:
+    type: object
+    required:
+      - filename
+      - title
+      - description
+      - date
+      - datetime
+      - channel_id
+      - published
+      - type
+      - bucket
+      - key
+      - asset_url
+      - thumb_sd_url
+      - inserted_by
+    properties:
+      id:
+        description: ID in the DB
+        type: string
+      filename:
+        type: string
+      title:
+        type: string
+      description:
+        type: string
+      thumb_hd_url:
+        description: Thumbnail in HD
+        type: string
+      thumb_sd_url:
+        description: Thumbnail in SD
+        type: string
+      asset_url:
+        description: URL to the asset proxy being served to the client. This URL points to a private asset in S3. You MUST sign the URL using PreSignedUrl method in your cient SDK and use your AWS Cognito credentials. The resulting URL can be used to access the content.
+        type: string
+      date:
+        description: Capture date of the asset. When it has been captured.
+        type: string
+      datetime:
+        description: Capture date of the asset. When it has been captured. As an epoch timestamp.
+        type: integer
+      channel_id:
+        type: string
+      org_id:
+        type: string
+      bucket:
+        type: string
+      published:
+        type: boolean
+      insert_time:
+        type: integer
+      update_time:
+        type: integer
+      vote_up:
+        type: integer
+      inserted_by:
+        type: string
+      inserted_by_username:
+        type: string
+      type:
+        type: string
+        description: image or video
+      key:
+        type: string
+      views:
+        type: integer
+      tags:
+        type: array
+        items:
+          type: string
+      fan_asset:
+        type: boolean
+        description: Is it an asset created by a fan
+      event_asset:
+        type: boolean
+        description: Is it an asset created as part of an event
+      dam_status:
+        type: string
+        description: The status of the asset in the storage system.
+  AssetList:
+    type: object
+    description: List of `Asset` object as returned by Orchestrate.io
+    required:
+      - results
+      - count
+    properties:
+      results:
+        type: array
+        items:
+          type: object
+          required:
+            - path
+            - reftime
+            - value
+          properties:
+            value:
+              $ref: '#/definitions/Asset'
+            path:
+              $ref: '#/definitions/Path'
+            reftime:
+              type: integer
+      count:
+        type: integer
+        description: Number of items in results array
+      total_count:
+        type: integer
+        description: Present when performing a search. Not a list.
+  Organization:
+    type: object
+    required:
+      - id
+      - name
+      - created
+      - status
+    properties:
+      id:
+        type: string
+        description: ID of the organization
+      name:
+        type: string
+        description: Name of the org
+      contact_name:
+        type: string
+        description: Name of the super admin of this org
+      contact_email:
+        type: string
+      type:
+        description: Type of organizations
+        type: string
+      type_other:
+        description: Custom organization type if any
+        type: string
+      created:
+        description: Date of creation
+        type: integer
+      status:
+        type: string
+      logo:
+        type: string
+      address1:
+        type: string
+      address2:
+        type: string
+      country:
+        type: string
+      not_listed_sport:
+        description: This org has a sport that is not listed
+        type: string
+      contact_phone:
+        type: string
+      org_sport:
+        type: string
+      store_url:
+        type: string
+      ticket_url:
+        type: string
+      level:
+        type: object
+        $ref: "#/definitions/Level"
+      following:
+        description: true if the user is following this organization
+        type: boolean
+      social_urls:
+        description: List the url for social sites
+        $ref: "#/definitions/SocialUrls"
+  OrganizationList:
+    type: object
+    description: List of `Organization` object as returned by Orchestrate.io
+    required:
+      - results
+      - count
+    properties:
+      results:
+        type: array
+        items:
+          type: object
+          required:
+            - path
+            - reftime
+            - value
+          properties:
+            value:
+              $ref: '#/definitions/Organization'
+            path:
+              $ref: '#/definitions/Path'
+            reftime:
+              type: integer
+      count:
+        type: integer
+        description: Number of items in results array
+      total_count:
+        type: integer
+        description: Present when performing a search. Not a list.
+      next:
+        type: string
+        description: If there are any more page, this variable should be there and not empty.
+  Event:
+    type: object
+    required:
+      - title
+      - startsAt
+      - isFinished
+      - org_id
+    properties:
+      created_by:
+        type: string
+      description:
+        type: string
+      endsAt:
+        type: integer
+      isFinished:
+        type: boolean
+      last_edit_by:
+        type: string
+      location:
+        type: string
+      org_id:
+        type: string
+      startsAt:
+        type: integer
+      title:
+        type: string
+  EventList:
+    type: object
+    description: List of `Event` object as returned by Orchestrate.io
+    required:
+      - results
+      - count
+    properties:
+      results:
+        type: array
+        items:
+          type: object
+          required:
+            - path
+            - reftime
+            - value
+          properties:
+            value:
+              $ref: '#/definitions/Event'
+            path:
+              $ref: '#/definitions/Path'
+            reftime:
+              type: integer
+      count:
+        type: integer
+        description: Number of items in results array
+      total_count:
+        type: integer
+        description: Present when performing a search. Not a list.
+  Sport:
+    type: object
+    required:
+      - name
+      - tags
+      - category
+    properties:
+      name:
+        type: string
+        description: System name
+      label:
+        type: string
+        description: Name to be displayed
+      tags:
+        type: array
+        items:
+          type: string
+      category:
+        description: Sport Category
+        type: string
+  Attachment:
+    type: object
+    description: Social post attachement
+    required:
+      - asset_url
+      - type
+    properties:
+      asset_url:
+        type: string
+      thumb_sd_url:
+        type: string
+      thumb_hd_url:
+        type: string
+      type:
+        type: string
+      description:
+        type: string
+  Post:
+    type: object
+    description: Represent a social post. Contains a message and possibly reference to assets.
+    required:
+      - created_by
+      - message
+      - timestamp
+      - social
+    properties:
+      created_by:
+        type: string
+      message:
+        type: string
+        description: The message of the post
+      timestamp:
+        type: integer
+        description: When was this post posted?
+      social:
+        type: object
+        description: Where has this post been posted?
+        properties:
+          sportarchive:
+            type: string
+          facebook:
+            type: string
+          twitter:
+            type: string
+          instagram:
+            type: string
+          youtube:
+            type: string
+      org_id:
+        type: string
+        description: Org_id associated with the post if any
+      attachments:
+        type: array
+        items:
+          $ref: '#/definitions/Attachment'
+      metadata:
+        type: array
+        items: 
+          type: object
+  PostsList:
+    type: object
+    description: List of social `Posts` object as returned by Orchestrate.io
+    required:
+      - results
+      - count
+    properties:
+      results:
+        type: array
+        items:
+          type: object
+          required:
+            - path
+            - reftime
+            - value
+          properties:
+            value:
+              $ref: '#/definitions/Post'
+            path:
+              $ref: '#/definitions/Path'
+            reftime:
+              type: integer
+      count:
+        type: integer
+        description: Number of items in results array
+      total_count:
+        type: integer
+        description: Present when performing a search. Not a list.
+  SportList:
+    type: object
+    description: List of `Sport` object as returned by Orchestrate.io
+    required:
+      - results
+      - count
+    properties:
+      results:
+        type: array
+        items:
+          type: object
+          required:
+            - path
+            - reftime
+            - value
+          properties:
+            value:
+              $ref: '#/definitions/Sport'
+            path:
+              $ref: '#/definitions/Path'
+            reftime:
+              type: integer
+      count:
+        type: integer
+        description: Number of items in results array
+      total_count:
+        type: integer
+        description: Present when performing a search. Not a list.
+  UserEventInfo:
+    type: object
+    description: Event stats and info for the associated event.
+    required:
+      - shots
+      - max_shots
+      - IdentityId
+    properties:
+      shots:
+        type: integer
+        description: The number of shots used. Starts at 0
+        maximum: 5
+        minimum: 0
+      max_shots:
+        type: integer
+        description: Max number of shots allowed
+        minimum: 1
+      IdentityId:
+        type: string
+        description: ID of the user who owns this Event Info object.
+      event_id:
+        type: string
+        description: ID of the the event associated with this info
+      org_id:
+        type: string
+        description: ID of the the organization associated with this info
+  Path:
+    type: object
+    properties:
+      kind:
+        type: string
+      collection:
+        type: string
+      key:
+        type: string
+      ref:
+        type: string
+      reftime:
+        type: integer
+  UploadStart:
+    type: object
+    required:
+      - org_id
+      - event_id
+      - filename
+      - size
+    properties:
+      org_id:
+        description: Bucket where the asset will be
+        type: string
+      event_id:
+        type: string
+        description: Key of the asset location in the bucket
+      filename:
+        type: string
+        description: ID of the encode in the DB that must be sent back when calling /asset_upload_finish
+      size:
+        type: integer
+        description: Size of the file in bytes
+        maximum: 5000000
+        minimum: 1024
+  AssetUpload:
+    type: object
+    required:
+      - bucket
+      - key
+      - encode_id
+    properties:
+      bucket:
+        description: Bucket where the asset will be
+        type: string
+      key:
+        type: string
+        description: Key of the asset location in the bucket
+      encode_id:
+        type: string
+        description: ID of the encode in the DB that must be sent back when calling /asset_upload_finish
+  Level:
+    type: object
+    required:
+      - IdentityId
+      - org_id
+      - level
+      - points
+      - previous_lvl_pts
+      - next_lvl_pts
+    properties:
+      IdentityId:
+        type: string
+        description: User owning this level
+      org_id:
+        description: Org associated with this level. Could be 'global' for the general user level.
+        type: integer
+      level:
+        type: integer
+        description: The current level
+      points:
+        description: The current number of points
+        type: integer
+      previous_lvl_pts:
+        description: Number of points for previous level
+        type: integer
+      next_lvl_pts:
+        description: Number of points for next level
+        type: integer
+  SocialUrls:
+    type: object
+    properties:
+      youtube:
+        type: string
+      twitter:
+        type: string
+      facebook:
+        type: string
+      linkedin:
+        type: string
