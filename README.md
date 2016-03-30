@@ -1,13 +1,14 @@
-# Dev,Create,Deploy and Test API Gateway + Python Lambda Functions
+# Dev, Create, Deploy and Test API Gateway + Python Lambda Functions
 
 This repository provides a framework for writing, packaging, and
 deploying lambda functions to AWS.
 
-You can also auto create or update your API on AWS API Gateway. You can also test connectivity to it and even call AWS Cognito to obtain an IdentityID.
+You can also auto create, update and deploy your API on AWS API Gateway. You can also test connectivity to it.
 
-You can simluate a Mobile App behavior and play the entire flow locally:
+If you use Cognito for temporary credentials, the framework will get you an Unauthenticated token and temporary credentials to connect to your Secure API endpoint.
 
-Cognito -> Connect to API -> Call Lambda function -> Parse result file
+You can simluate a Mobile App behavior and play the entire flow locally:<br>
+`Cognito -> Connect to API -> Call Lambda function -> Parse result file`
 
 ## Cognito
 
@@ -59,6 +60,8 @@ Lambda documentation for more details on how to write the handler.
 	def handler(event, context):
 		...
 
+See the example fuction in the `src` folder.
+
 ### Third-party Libraries
 
 For a third-party library, use the `requirements.txt` file as you
@@ -79,7 +82,9 @@ are copied verbatim alongside the Lambda function source files.)
 
 ## Makefile
 
-All is done through the Makefile.
+
+*All is done through the Makefile.*
+
 
 ```
 Run a function:        make run/FUNCTION [EVENT=filename]
@@ -122,41 +127,6 @@ Connect to a live API: make connect METHOD=<method> ENDPOINT=</path/{id}> [QUERY
                        `$> make connect ENDPOINT=/assets/0e0d1e42ad20443c METHOD=GET`
 ```
 
-### Running Functions Locally
-
-Before building and deploying, you may want to test your Lambda code
-first. In order to simulate the Lambda environment, a script is
-provided that will execute your function as if it was in AWS Lambda.
-
-	usage: make run/FUNCTION [VERBOSE=1] [EVENT=filename]
-
-	Run a Lambda function locally.
-
-	optional arguments:
-	  VERBOSE=1       Sets verbose output for the function
-	  EVENT=filename  Load an event from a file rather than stdin. This file contain the input you want to send to your function.
-
-The `make run/%` script will take a JSON event from a standard input
-(or a file if you specify), and execute the function you specify.
-
-### Writing Unit Tests
-
-For automated testing, you can write unit tests using Python's
-`unittest` module.
-
-* All test cases must be in a file called `test*.py` in the `tests`
-  directory. Any example is `testModule.py`.
-* Each file can contain any number of test cases, but each must
-  inherit from `unittest.TestCase`.
-* In tests, you can import the handler for a Lambda function with:
-  `import src.<MODULE_NAME>.index`, and then using `.handler`.
-
-All the unit tests can be run using `make test`. It auto-discovers all
-test cases that follow the above rules. To run a specific test, just
-run `make test/<TEST>`, replacing `<TEST>` with the name of the test
-(i.e., the part of the test's filename after "test"; as an example,
-the file "testUpload.py" has the name "upload").
-
 ### Creating
 
 If the function is new you must create it in the system.
@@ -181,6 +151,25 @@ Note: If you didn't get the Python modules. Just run first:
 
 You can also run `make all` or `make dist` to build all of the
 functions.
+
+### Running
+
+Before deploying, you want to test your Lambda code
+first locally. In order to simulate the Lambda environment, a script is
+provided that will execute your function as if it was in AWS Lambda.
+
+	usage: make run/FUNCTION [VERBOSE=1] [EVENT=filename]
+
+	Run a Lambda function locally.
+
+	optional arguments:
+	  VERBOSE=1       Sets verbose output for the function
+	  EVENT=filename  Load an event from a file rather than stdin. This file contain the input you want to send to your function.
+
+The `make run/%` script will take a JSON event from a standard input
+(or a file if you specify), and execute the function you specify.
+
+This function will inject the proper data in the `event` and `context` variables like Lambda would. Your Cognito Identity ID will be injected too.
 
 ### Deploying
 
@@ -207,6 +196,8 @@ If you use Cognito, you can connect to your API by using this framework:
 
 This will call your API and display the resulting data. We expect JSON.
 
+See `lib/apiconnect.py` for more details. And below for the required environment variables you need to get started.
+
 ## Environment & Secrets
 
 In order for your Lambda functions to get secrets and environment variables, we provide a mechanism in the Makefile that downloads a file from S3 and transforms it as a env.py file put in `/lib`. This file can then be `import` in your functions and will be added in the resulting ZIP file before being sent out to AWS.
@@ -232,3 +223,32 @@ Secrets such as the following can be added to this file in S3:
 Note: The .env file will be stored locally from the environment file downloaded from S3.
 
 Note: Edit the `.env` rule in the Makefile to download your configuration file from the S3 location you want.
+
+### Environment expected
+
+Those are the required environment variables you must provide in your .env file. This is what you must put in the file located in S3. This will be converted to the `lib/env.py` file that you can inject in your Lambda functions.
+
+    	API_HOST='xxxxxxxxxxxxxx.execute-api.us-east-1.amazonaws.com'
+	API_ENDPOINT='https://xxxxxxxxxxxxxxx.execute-api.us-east-1.amazonaws.com'
+	API_STAGE='/dev_06'
+	IDENTITY_POOL='us-east-1:49d897f9-e8a3-459b-abf2-xxxxxxxxxxxxxxx'
+	AWS_ACCOUNT_ID='xxxxxxxxxxxxxxx'
+	CONFIG_MODE='DEV'
+
+## Unit Tests
+
+For automated testing, you can write unit tests using Python's
+`unittest` module.
+
+* All test cases must be in a file called `test*.py` in the `tests`
+  directory. Any example is `testModule.py`.
+* Each file can contain any number of test cases, but each must
+  inherit from `unittest.TestCase`.
+* In tests, you can import the handler for a Lambda function with:
+  `import src.<MODULE_NAME>.index`, and then using `.handler`.
+
+All the unit tests can be run using `make test`. It auto-discovers all
+test cases that follow the above rules. To run a specific test, just
+run `make test/<TEST>`, replacing `<TEST>` with the name of the test
+(i.e., the part of the test's filename after "test"; as an example,
+the file "testUpload.py" has the name "upload").

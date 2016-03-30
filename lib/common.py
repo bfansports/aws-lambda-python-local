@@ -1,6 +1,5 @@
 import boto3
 import botocore
-import porc
 import sys
 import os
 import json
@@ -26,16 +25,6 @@ class SAError(Exception):
                 (filename, lineno, name, line))
 
         return (msg)
-
-def get_orchestrate_client():
-    try:
-        return porc.Client(env.ORCHESTRATE_KEY)
-    except botocore.exceptions.ClientError as e:
-        raise SAError(e.message)
-    except botocore.exceptions.BotoCoreError as e:
-        raise SAError(e.message)
-    except:
-        raise SAError("unknown_error")
 
 # Used to catch some orchestrate error
 def raise_for_status(res):
