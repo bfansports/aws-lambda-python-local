@@ -252,3 +252,7 @@ test cases that follow the above rules. To run a specific test, just
 run `make test/<TEST>`, replacing `<TEST>` with the name of the test
 (i.e., the part of the test's filename after "test"; as an example,
 the file "testUpload.py" has the name "upload").
+
+## Credit
+
+To @Parent5446 (https://github.com/Parent5446) who wrote most of this great framework.
