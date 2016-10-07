@@ -1,7 +1,7 @@
 # Dev, Create, Deploy and Test API Gateway + Python Lambda Functions
 
 This repository provides a framework for writing, packaging, and
-deploying lambda functions to AWS.
+deploying Python lambda functions to AWS.
 
 You can also auto create, update and deploy your API on AWS API Gateway. You can also test connectivity to it.
 
@@ -82,63 +82,21 @@ are copied verbatim alongside the Lambda function source files.)
 
 ## Makefile
 
-
-*All is done through the Makefile.*
-
-
-```
-Run a function:        make run/FUNCTION [EVENT=filename]
-Run all tests:         make test
-Run a specific test:   make test/TEST
-----------------------------------------------------------
-Create AWS function:   make create/FUNCTION
-Package all functions: make dist
-Package a function:    make dist/FUNCTION
-Deploy all functions:  make deploy [ENV=prod] - Default ENV=dev.
-Deploy a function:     make deploy/FUNCTION [ENV=prod]
-Setup environment:     make env [ENV=environment] - Downloads the config file from S3. (edit Makefile)
-Set function MEM size: make setmem/FUNCTION SIZE=[size] - Set/Update a function memory size
-----------------------------------------------------------
-Deploy an API to AWS:  make api VERS=<version> [UPDATE=<api_id>] [STAGE=<stage_name>] [CREATE=1]
-       	      	       The Makefile expects a file in the `swagger` folder as follow: swagger/api-${VERS}.yaml
-                       We process this file and perfom replacement of possible %% variables in the file.
-		       Edit Makefile to process your custom variables.
-                       You can decide to deploy the API straight to AWS API Gateway and deploy it.
-                       If UPDATE is provided: It will update the API directly in AWS using the ID provided
-                       If STAGE is provided: It will also deploy the API once updated
-                       If CREATE is provided: It will create the API
-----------------------------------------------------------
-Connect to a live API: make connect METHOD=<method> ENDPOINT=</path/{id}> [QUERY=<foo=bar&bar=foo>] [PAYLOAD=<filepath>] [NOAUTH=1]
-                       METHOD: GET, POST, PUT, PATCH, DELETE, etc
-                       ENDPOINT: refers to the URL path after `hostname/stage/`. Example: `/users`, `/videos`, etc 
-                       QUERY: refers to the querystring passed to the URL. Standard querystring. Example: `id=2134&format=json`
-		       
-                       You can provide payload with STDIN. Just type your input JSON data, then hit 'ctrl-d' to exit input and send the input data.
-
-		       NOAUTH forces a new Cognito Identity and ignore the .identity file.
-
-		       The .identity file caches your Cognito identity locally. We create it at the first call and cache it. When you test your lambda functions locally, we pass the identity to the functions in the `context` variable. We Mock what you would receive from AWS.
-
-                       Examples:
-                       POST /signin: Sign the user in
-                       `$> make connect ENDPOINT=/signin METHOD=POST PAYLOAD=tests/data/signin.json`
-
-                       GET /assets/{asset_id}: Get an asset
-                       `$> make connect ENDPOINT=/assets/0e0d1e42ad20443c METHOD=GET`
-```
+All actions are done through the Makefile. Just type `make` to see the help.
 
 ### Creating
 
-If the function is new you must create it in the system.
+If the function is new, you must create it in AWS Lambda.
 
         make create/<function>
 
-This will create the function in lambda. You can then update it using
-"deploy" below.
+This will create the function in AWS and will upload your code.
+
+You can then update it using `make deploy/<function>` below.
 
 ### Building
 
-Once your function is written, it can be built into a ZIP file.
+Your functions can be built into a ZIP file.
 
 	make dist/<function>.zip
 
@@ -154,13 +112,14 @@ functions.
 
 ### Running
 
-Before deploying, you want to test your Lambda code
-first locally. In order to simulate the Lambda environment, a script is
+Before deploying, you want to test your Lambda code locally first.
+
+In order to simulate the Lambda environment, a script is
 provided that will execute your function as if it was in AWS Lambda.
 
 	usage: make run/FUNCTION [VERBOSE=1] [EVENT=filename]
 
-	Run a Lambda function locally.
+	This runs a Lambda function locally.
 
 	optional arguments:
 	  VERBOSE=1       Sets verbose output for the function
@@ -186,6 +145,8 @@ all Lambda functions. (Use this carefully.)
 You want to specify ENV=prod if you want to pull the .env file from prod S3 and not the default DEV.
 If you do so, make sure you have the AWS credentials setup correctly locally.
 
+*Note:* You want to edit the Makefile to replace the S3 bucket used for uploading. Right now, our bucket is hardcoded in there...
+
 ### Connecting
 
 If your API is secure, you can't test it in the AWS console nor in the browser anymore. You need to authenticate.
@@ -196,11 +157,13 @@ If you use Cognito, you can connect to your API by using this framework:
 
 This will call your API and display the resulting data. We expect JSON.
 
-See `lib/apiconnect.py` for more details. And below for the required environment variables you need to get started.
+See `lib/apiconnect.py` for more details. And see below for the required environment variables you need to get started.
 
 ## Environment & Secrets
 
-In order for your Lambda functions to get secrets and environment variables, we provide a mechanism in the Makefile that downloads a file from S3 and transforms it as a env.py file put in `/lib`. This file can then be `import` in your functions and will be added in the resulting ZIP file before being sent out to AWS.
+In order for your Lambda functions to get secrets and environment variables, we provide a mechanism in the Makefile that downloads a file from S3 and transforms it as a env.py file that is being put in the `./lib` folder. This file can then be `import` in your functions and will be added in the resulting ZIP file before being sent out to AWS.
+
+This allows your functions to be built and package with the proper environment.
 
 ### Details
 
@@ -213,20 +176,20 @@ To refresh the local .env file, delete it, and
 
    	make .env [ENV=prod]
 
-We could download from S3 at runtime, but it slows down the Lambda function, and you pay for that.
+We could download from S3 at runtime, but it slows down the Lambda function, and you pay for that...
 
 Secrets such as the following can be added to this file in S3:
   - Environment variables
   - Secret API keys
   - Anything else that is external and dynamic
 
-Note: The .env file will be stored locally from the environment file downloaded from S3.
+*Note:* The .env file will be stored locally from the environment file downloaded from S3.
 
-Note: Edit the `.env` rule in the Makefile to download your configuration file from the S3 location you want.
+*Note:* Edit the `.env` rule in the Makefile to download your configuration file from the S3 location you want. Right now the bucket is hardcoded and point to ours!
 
 ### Environment expected
 
-Those are the required environment variables you must provide in your .env file. This is what you must put in the file located in S3. This will be converted to the `lib/env.py` file that you can inject in your Lambda functions.
+Those are the required environment variables you MUST provide in your .env file. This is what you must put in the file located in S3. This will be converted to the `lib/env.py` file that can be injected in your Lambda functions.
 
     	API_HOST='xxxxxxxxxxxxxx.execute-api.us-east-1.amazonaws.com'
 	API_ENDPOINT='https://xxxxxxxxxxxxxxx.execute-api.us-east-1.amazonaws.com'
@@ -240,12 +203,9 @@ Those are the required environment variables you must provide in your .env file.
 For automated testing, you can write unit tests using Python's
 `unittest` module.
 
-* All test cases must be in a file called `test*.py` in the `tests`
-  directory. Any example is `testModule.py`.
-* Each file can contain any number of test cases, but each must
-  inherit from `unittest.TestCase`.
-* In tests, you can import the handler for a Lambda function with:
-  `import src.<MODULE_NAME>.index`, and then using `.handler`.
+   * All test cases must be in a file called `test*.py` in the `tests` directory. Any example is `testModule.py`.
+   * Each file can contain any number of test cases, but each must inherit from `unittest.TestCase`.
+   * In tests, you can import the handler for a Lambda function with: `import src.<MODULE_NAME>.index`, and then using `.handler`.
 
 All the unit tests can be run using `make test`. It auto-discovers all
 test cases that follow the above rules. To run a specific test, just
