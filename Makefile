@@ -1,7 +1,7 @@
 ENV = dev
+PROFILE :=
 EVENT :=
 DIR := $(dir $(abspath $(lastword $(MAKEFILE_LIST))))
-SIZE = 1536
 
 # Helper functions
 FILTER_OUT = $(foreach v,$(2),$(if $(findstring $(1),$(v)),,$(v)))
@@ -19,7 +19,7 @@ help:
 	echo "Run all tests:         make test"
 	echo "Run a specific test:   make test/TEST"
 	echo "----------------------------------------------------------"
-	echo "Create AWS function:   make create/FUNCTION"
+	echo "Create AWS function:   make create/FUNCTION DESC='Func description'"
 	echo "Package all functions: make dist"
 	echo "Package a function:    make dist/FUNCTION"
 	echo "Deploy all functions:  make deploy [ENV=prod] - Default ENV=dev"
@@ -56,7 +56,6 @@ api: .env _check-vers
 	$(eval DST_FILE = _api-$(VERS).yaml)
 	cp ${SRC_FILE} ${DST_FILE}
 	$(eval ORCHESTRATE_AUTH = 'Basic $(shell echo -n "${ORCHESTRATE_KEY}:" | base64)')
-# We replace variables. Put your own there!
 	sed -i "s/%ORCH_CREDS%/${ORCHESTRATE_AUTH}/g" ${DST_FILE}
 	sed -i "s/%AWS_ACCOUNT%/${AWS_ACCOUNT}/g" ${DST_FILE}
 # If we have a STAGE then we can also deploy live 
@@ -86,24 +85,24 @@ test/%: $(wildcard src/**/*) $(wildcard lib/**/*) $(wildcard tests/*) build/setu
 	PYTHONPATH="${DIR}build" python -m unittest tests.test$(call TITLE_CASE,$*) $(if $(VERBOSE),--verbose)
 
 create/%: dist/%.zip _check-desc .env
-	aws s3 cp $< s3://sportarchive-${ENV}-code/lambda/$(<F)
-	aws lambda create-function \
+	aws $(if ${PROFILE},--profile ${PROFILE},) s3 cp $< s3://sportarchive-${ENV}-code/lambda/$(<F)
+	aws $(if ${PROFILE},--profile ${PROFILE},) lambda create-function \
 		--function-name $* \
-		--memory-size ${SIZE} \
+		--memory-size 1536 \
 		--runtime python2.7 \
 		--role arn:aws:iam::${AWS_ACCOUNT}:role/lambda_orchestrate_role \
 		--handler index.handler \
 		--code S3Bucket=sportarchive-${ENV}-code,S3Key=lambda/$(<F) \
 		--description '${DESC}' \
 		--timeout 10
-setmem/%: _check-size 
-	aws lambda update-function-configuration \
+setmem/%: _check-size
+	aws $(if ${PROFILE},--profile ${PROFILE},) lambda update-function-configuration \
 		--function-name $* \
 		--memory-size ${SIZE}
 deploy: $(addprefix deploy/,$(call FILTER_OUT,__init__, $(notdir $(wildcard src/*)))) .env
 deploy/%: dist/%.zip .env
-	aws s3 cp $< s3://sportarchive-${ENV}-code/lambda/$(<F)
-	aws lambda update-function-code \
+	aws $(if ${PROFILE},--profile ${PROFILE},) s3 cp $< s3://sportarchive-${ENV}-code/lambda/$(<F)
+	aws $(if ${PROFILE},--profile ${PROFILE},) lambda update-function-code \
 		--function-name $* \
 		--s3-bucket sportarchive-${ENV}-code \
 		--s3-key lambda/$(<F)
@@ -124,7 +123,7 @@ clean:
 	-$(RM) -f .env
 
 .env:
-	aws s3 cp s3://sportarchive-${ENV}-code/${ENV}_creds ./lib/env.py
+	aws $(if ${PROFILE},--profile ${PROFILE},) s3 cp s3://sportarchive-${ENV}-code/${ENV}_creds ./lib/env.py
 	cp ./lib/env.py .env
 
 _check-vers:
