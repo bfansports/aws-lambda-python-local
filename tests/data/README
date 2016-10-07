@@ -1,1 +1,3 @@
 Create .json files with test data here to provide to your functions when running `make run/<function> EVENT=tests/data/testdata.json` for example.
+
+This file data will be used as input for your function.

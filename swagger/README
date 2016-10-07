@@ -1,7 +1,7 @@
-Swagger file example calling lambda functions as well as API proxying. 
+Here is a Swagger file example calling lambda functions as well as API proxying.
 
-Some variables are in this file:
-  - %AWS_ACCOUNT%: Will replace this with your AWS_ACCOUNT environment variable. Create it if not present. 
-  - %ORCH_CREDS%: Some variable for us.
+Some variables are in this file and will be replaced by the Makefile when calling `make api`:
+  - %AWS_ACCOUNT%: Will replace this with your AWS_ACCOUNT environment variable. Create this variable if not present. 
+  - %ORCH_CREDS%: One of our variable that we use. 
 
-You can update the Makefile to edit, add or remove the support variables.
+You can update the Makefile to edit, add or remove support for variables.
