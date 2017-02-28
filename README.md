@@ -82,7 +82,7 @@ are copied verbatim alongside the Lambda function source files.)
 
 ## Makefile
 
-All actions are done through the Makefile. Just type `make` to see the help.
+All actions are done through the [Makefile](https://github.com/sportarchive/aws-lambda-python-local/blob/master/Makefile). Just type `make` to see the help.
 
 ### Creating
 
