@@ -203,7 +203,7 @@ Those are the required environment variables you MUST provide in your .env file.
 For automated testing, you can write unit tests using Python's
 `unittest` module.
 
-   * All test cases must be in a file called `test*.py` in the `tests` directory. Any example is `testModule.py`.
+   * All test cases must be in a file called `test*.py` in the `tests` directory. An example is `testModule.py`.
    * Each file can contain any number of test cases, but each must inherit from `unittest.TestCase`.
    * In tests, you can import the handler for a Lambda function with: `import src.<MODULE_NAME>.index`, and then using `.handler`.
 
