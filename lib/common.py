@@ -6,7 +6,7 @@ import json
 import traceback
 import requests
 import string
-from urllib2 import HTTPError
+from urllib.error import HTTPError
 from lib import env
 
 class SAError(Exception):
@@ -36,12 +36,12 @@ def raise_for_status(res):
 # Get Payload from input and parses it
 def get_payload(input, IdentityId, default=''):
     try:
-        print "Enter your JSON input or Ctrl-D for no input:"
+        print("Enter your JSON input or Ctrl-D for no input:")
         payload = json.dumps(json.load(input))
         payload = json.loads(string.replace(payload, "%IDENTITY_ID%", IdentityId))
         payload = json.dumps(payload)
     except Exception as e:
-        print e
+        print(e)
         payload = default
 
     return payload
@@ -49,7 +49,7 @@ def get_payload(input, IdentityId, default=''):
 # Get identityID if any
 def get_identity():
     if os.path.exists('.identity_'+env.CONFIG_MODE):            
-        print "Get identity from cache file .identity"
+        print("Get identity from cache file .identity")
         with open('.identity_'+env.CONFIG_MODE, 'r') as myfile:
             return myfile.read().replace('\n', '')
     return False

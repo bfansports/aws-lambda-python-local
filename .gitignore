@@ -21,6 +21,9 @@ eggs/
 *.egg-info/
 .installed.cfg
 *.egg
+.env
+.identity_*
+lib/env.py
 
 # PyInstaller
 #  Usually these files are written by a python script from a template

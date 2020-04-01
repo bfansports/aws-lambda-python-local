@@ -27,15 +27,15 @@ args = parser.parse_args()
 try:
     api = apiconnect.ApiConnect(args.verbose, args.noauth)
     
-    print "method: "+args.method
-    print "path: "+args.path
+    print("method: "+args.method)
+    print("path: "+args.path)
     query = ''
     if args.query is not None:
         query = args.query
-        print "query: "+args.query
+        print("query: "+args.query)
 
     payload = common.get_payload(args.input, api.IdentityId)
-    print "payload: "+payload
+    print("payload: "+payload)
             
     api.callApi(args.method, args.path, payload, query)
 

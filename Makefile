@@ -25,7 +25,7 @@ help:
 	echo "Deploy all functions:  make deploy [ENV=prod] - Default ENV=dev"
 	echo "Deploy a function:     make deploy/FUNCTION [ENV=prod]"
 	echo "Setup environment:     make .env [ENV=environment]"
-	echo "Set function MEM size: make setmem/FUNCTION SIZE=[size]" 
+	echo "Set function MEM size: make setmem/FUNCTION SIZE=[size]"
 	echo "----------------------------------------------------------"
 	echo "Deploy an API to AWS:  make api VERS=<version> [UPDATE=<api_id>] [STAGE=<stage_name>] [CREATE=1]"
 	echo "                       Load the proper YAML file from ./swagger folder using the VERS provided. Processes the file to inject Variables"
@@ -40,7 +40,7 @@ help:
 	echo "                       QUERY refers to the querystring passed to the URL"
 	echo "                       You can provide payload with STDIN. Launch the command and just type your input JSON data, then hit 'ctrl-d' to exit input and send the data to your API"
 	echo "                       NOAUTH forces a new Cognito Identity and ignore the .identity file"
-	echo ""	
+	echo ""
 	echo "                       Examples:"
 	echo "                       POST /signin: Sign the user in"
 	echo "                       $$> make connect ENDPOINT=/signin METHOD=POST PAYLOAD=tests/data/signin.json"
@@ -58,7 +58,7 @@ api: .env _check-vers
 	$(eval ORCHESTRATE_AUTH = 'Basic $(shell echo -n "${ORCHESTRATE_KEY}:" | base64)')
 	sed -i "s/%ORCH_CREDS%/${ORCHESTRATE_AUTH}/g" ${DST_FILE}
 	sed -i "s/%AWS_ACCOUNT%/${AWS_ACCOUNT}/g" ${DST_FILE}
-# If we have a STAGE then we can also deploy live 
+# If we have a STAGE then we can also deploy live
 	if [ -n "${STAGE}" ]; then \
 		$(eval STAGE2 = --deploy ${STAGE}) \
 		echo "Deploy to stage: ${STAGE2}"; \
@@ -76,7 +76,7 @@ api: .env _check-vers
 connect: _check-connect .env
 	PYTHONPATH="${DIR}build" python ${DIR}connect.py  $(if $(METHOD),-m $(METHOD)) $(if $(ENDPOINT),-p $(ENDPOINT)) $(if $(QUERY),-q $(QUERY)) $(if $(PAYLOAD),-i $(PAYLOAD)) $(if $(VERBOSE),--verbose) $(if $(NOAUTH), --noauth)
 
-run/%: .env src/%/* build/setup.cfg $(wildcard lib/**/*) 
+run/%: .env src/%/* build/setup.cfg $(wildcard lib/**/*)
 	PYTHONPATH="${DIR}build" python "${DIR}run.py" $(if $(VERBOSE),--verbose) $* $(if $(EVENT),"$(EVENT)")
 
 test: $(wildcard src/**/*) $(wildcard lib/**/*) $(wildcard tests/*) build/setup.cfg .env
@@ -113,6 +113,7 @@ dist/%.zip: src/%/* build/setup.cfg $(wildcard lib/**/*) .env
 	cd $(<D) && zip -r -q ../../$@ *
 
 build/setup.cfg: requirements.txt
+	mkdir -p build
 	find build/ -mindepth 1 -not -name setup.cfg -delete
 	pip install -r $^ -t $(@D)
 	touch $@

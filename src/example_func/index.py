@@ -1,5 +1,4 @@
 from lib import common
-from env import common
 
 def handler(event, context):
     try:
@@ -10,17 +9,21 @@ def handler(event, context):
 
         CognitoIdentityID = context.identity.cognito_identity_id
 
+        data = {
+            "message": "Hello " + str(CognitoIdentityID)
+        }
+
         # Do your thing. Return JSON data.
-        
+
     except common.SAError as e:
-        print e # log
+        print(e) # log
         raise Exception('error: custom_failed')
     except KeyError as e:
         # IdentityId missing in 'event' ?
-        print common.SAError("accessing unknown property")
+        print(common.SAError("accessing unknown property"))
         raise Exception('error: property_failed')
     except Exception as e:
-        print common.SAError("unknown error of type %s" % type(e))
+        print(common.SAError("unknown error of type %s" % type(e)))
         raise Exception('error: generic_failed')
-    
-    return data.json
+
+    return data

@@ -2,7 +2,7 @@ import unittest
 import uuid
 import copy
 from .MockContext import MockContext
-import MockContext
+from . import MockContext
 import src.example_func.index
 
 def run_func(**keyword_args):
@@ -12,7 +12,7 @@ def run_func(**keyword_args):
 
 class UsersAssets(unittest.TestCase):
             def test_one(self):
-                        print "\n - test one"
+                        print("\n - test one")
                         context = MockContext.get_context('example_func', '$LATEST')
                         res = run_func(
                                     event = {

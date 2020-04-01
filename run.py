@@ -46,5 +46,8 @@ except Exception as exc:
     }
     del exc_traceback
 
-print "\nOutput:\n--------"
-print json.dumps(response, indent=4, separators=(',', ': '))
+print("\nOutput:\n--------")
+try:
+    print(json.dumps(response, indent=4, separators=(',', ': ')))
+except Exception as e:
+    print(response)

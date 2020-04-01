@@ -4,7 +4,7 @@
 import sys, os, base64, datetime, hashlib, hmac 
 import requests 
 import boto3
-import httplib
+import http.client
 import logging
 import json
 import os.path
@@ -15,7 +15,7 @@ class ApiConnect(object):
     def __init__(self, verbose=0, noauth=0):
 
         if verbose == 1:
-            httplib.HTTPConnection.debuglevel = 1
+            http.client.HTTPConnection.debuglevel = 1
             
             logging.basicConfig()
             logging.getLogger().setLevel(logging.DEBUG)
@@ -26,7 +26,7 @@ class ApiConnect(object):
         self.IdentityId = common.get_identity()
         # We don't have a cached Identity. Get a new one
         if (noauth == 0 and self.IdentityId is False):
-            print "Get new Identity from Cognito"
+            print("Get new Identity from Cognito")
             # Get Cognito identity
             res = boto3.client('cognito-identity').get_id(
                 AccountId=env.AWS_ACCOUNT_ID,
@@ -36,9 +36,9 @@ class ApiConnect(object):
             # Cache identity
             common.put_identity(self.IdentityId)
 
-        print "\nYOUR Cognito IdentityId is: "
-        print "--------------------------\n"+self.IdentityId
-        print ""
+        print("\nYOUR Cognito IdentityId is: ")
+        print("--------------------------\n"+self.IdentityId)
+        print("")
 
         # Get OpenId token to use for getting credentials
         res = boto3.client('cognito-identity').get_open_id_token(
@@ -118,8 +118,8 @@ class ApiConnect(object):
             if self.request_parameters != '':
                 request_url += '?' + self.request_parameters
                 
-            print '\nBEGIN REQUEST'
-            print "--------------------------\n"+request_url
+            print('\nBEGIN REQUEST')
+            print("--------------------------\n"+request_url)
             
             if self.method == 'GET':
                 r = requests.get(request_url, data=self.payload, headers=headers)
@@ -130,13 +130,13 @@ class ApiConnect(object):
             elif self.method == 'DELETE':
                 r = requests.delete(request_url, data=self.payload, headers=headers)
 
-            print '\nRESPONSE'
-            print "--------------------------\nStatus Code: "+str(r.status_code)
-            print r.text
+            print('\nRESPONSE')
+            print("--------------------------\nStatus Code: "+str(r.status_code))
+            print(r.text)
 
-            print '\nPRETTY JSON'
-            print json.dumps(json.loads(r.text), sort_keys=True, indent=4, separators=(',', ': '))
+            print('\nPRETTY JSON')
+            print(json.dumps(json.loads(r.text), sort_keys=True, indent=4, separators=(',', ': ')))
     
         except Exception as e:
-            print e
+            print(e)
             
