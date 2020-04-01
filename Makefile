@@ -89,7 +89,7 @@ create/%: dist/%.zip _check-desc .env
 	aws $(if ${PROFILE},--profile ${PROFILE},) lambda create-function \
 		--function-name $* \
 		--memory-size 1536 \
-		--runtime python2.7 \
+		--runtime python3.8 \
 		--role arn:aws:iam::${AWS_ACCOUNT}:role/lambda_orchestrate_role \
 		--handler index.handler \
 		--code S3Bucket=sportarchive-${ENV}-code,S3Key=lambda/$(<F) \
@@ -106,6 +106,7 @@ deploy/%: dist/%.zip .env
 		--function-name $* \
 		--s3-bucket sportarchive-${ENV}-code \
 		--s3-key lambda/$(<F)
+	./scripts/lambda_configuration_update.sh $*
 dist: $(addprefix dist/,$(addsuffix .zip,$(call FILTER_OUT,__init__, $(notdir $(wildcard src/*))))) .env
 dist/%.zip: src/%/* build/setup.cfg $(wildcard lib/**/*) .env
 	cd build && zip -r -q ../$@ *
