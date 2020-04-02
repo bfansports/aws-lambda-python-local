@@ -109,6 +109,7 @@ deploy/%: dist/%.zip .env
 	./scripts/lambda_configuration_update.sh $*
 dist: $(addprefix dist/,$(addsuffix .zip,$(call FILTER_OUT,__init__, $(notdir $(wildcard src/*))))) .env
 dist/%.zip: src/%/* build/setup.cfg $(wildcard lib/**/*) .env
+	mkdir -p dist
 	cd build && zip -r -q ../$@ *
 	zip -r -q $@ lib
 	cd $(<D) && zip -r -q ../../$@ *

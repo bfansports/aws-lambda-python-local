@@ -12,7 +12,7 @@ from lib import env
 class SAError(Exception):
     def __init__(self, what):
         self.what = what
-        
+
     def __str__(self):
 
         exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -38,7 +38,7 @@ def get_payload(input, IdentityId, default=''):
     try:
         print("Enter your JSON input or Ctrl-D for no input:")
         payload = json.dumps(json.load(input))
-        payload = json.loads(string.replace(payload, "%IDENTITY_ID%", IdentityId))
+        payload = json.loads(payload.replace("%IDENTITY_ID%", IdentityId))
         payload = json.dumps(payload)
     except Exception as e:
         print(e)
@@ -48,7 +48,7 @@ def get_payload(input, IdentityId, default=''):
 
 # Get identityID if any
 def get_identity():
-    if os.path.exists('.identity_'+env.CONFIG_MODE):            
+    if os.path.exists('.identity_'+env.CONFIG_MODE):
         print("Get identity from cache file .identity")
         with open('.identity_'+env.CONFIG_MODE, 'r') as myfile:
             return myfile.read().replace('\n', '')

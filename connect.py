@@ -15,9 +15,9 @@ parser.add_argument('--noauth', action='count', default=0,
                     help='Use a new identity even if .idendity file exists')
 parser.add_argument('--method', '-m', type=str, required=True,
                     help='HTTP Method to use to connect')
-parser.add_argument('--path', '-p', type=str, required=True, 
+parser.add_argument('--path', '-p', type=str, required=True,
                     help='/path at the end of hostname')
-parser.add_argument('--query', '-q', type=str, 
+parser.add_argument('--query', '-q', type=str,
                     help='Api endpoint to append to baseurl.')
 parser.add_argument('--input', '-i', metavar='FILE', type=argparse.FileType('r'), nargs='?',
                     default=sys.stdin,
@@ -26,7 +26,7 @@ args = parser.parse_args()
 
 try:
     api = apiconnect.ApiConnect(args.verbose, args.noauth)
-    
+
     print("method: "+args.method)
     print("path: "+args.path)
     query = ''
@@ -36,7 +36,7 @@ try:
 
     payload = common.get_payload(args.input, api.IdentityId)
     print("payload: "+payload)
-            
+
     api.callApi(args.method, args.path, payload, query)
 
 except Exception as e:
@@ -47,5 +47,3 @@ except Exception as e:
         'errorType': exc_type.__name__
     }
     del exc_traceback
-    
-
