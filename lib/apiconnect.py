@@ -114,13 +114,13 @@ class ApiConnect(object):
             print("--------------------------\n"+request_url)
 
             if self.method == 'GET':
-                r = requests.get(request_url, data=self.payload, headers=headers)
+                r = requests.get(request_url, data=self.payload, headers=headers, timeout=30)
             elif self.method == 'POST':
-                r = requests.post(request_url, data=self.payload, headers=headers)
+                r = requests.post(request_url, data=self.payload, headers=headers, timeout=30)
             elif self.method == 'PUT':
-                r = requests.put(request_url, data=self.payload, headers=headers)
+                r = requests.put(request_url, data=self.payload, headers=headers, timeout=30)
             elif self.method == 'DELETE':
-                r = requests.delete(request_url, data=self.payload, headers=headers)
+                r = requests.delete(request_url, data=self.payload, headers=headers, timeout=30)
 
             print('\nRESPONSE')
             print("--------------------------\nStatus Code: "+str(r.status_code))
